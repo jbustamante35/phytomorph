@@ -1,0 +1,8 @@
+#!/bin/bash
+fileNameToSign=$1
+fileNameToSign=$(fileNamePrepare $fileNameToSign)
+echo "signing:"$fileNameToSign
+signExt=psgn
+signatureFile=$PHYTO_SIGNATURE_BASE$fileNameToSign.$signExt
+echo -n $fileNameToSign | gpg --clearsign -o $signatureFile
+#echo -n $fileNameToSign | openssl dgst -sha256 -sign ~/phytoMorphTK/baseInstall/$signingKey -out ~/phytoMorphTK/dataFiles/signedFiles/$fileNameToSign.$signExt

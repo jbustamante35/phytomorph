@@ -1,0 +1,365 @@
+#!/bin/bash
+baseFolder=$HOME'/imageStore/'
+kvSep='_'
+anotherTile='y'
+tileCount=1
+# key used to encode values for folder routing
+folderKey='fr'
+# key used to encode values for file rounting
+fileKey='fe'
+tileString=''
+
+fullHeight=140
+fullWidth=190
+
+dataTypeKey='dataType'
+dataTypeValue='metaCode'
+
+dvcKey='dvcKey'
+dvcType='$dvc-m,$'
+
+mvcKey='mvcKey'
+mvcType='$mvc-m,$'
+
+uuidKey='uuidKey'
+uuidType='$uuid-r,$'
+
+iCountKey='indexKey'
+iCountType='$iCount,$'
+
+sampleKey='sampleSpecific'
+deviceTypeKey='deviceType'
+totalTileNumberKey='totalTiles'
+devicePortKey='usbPort'
+versionkey='version'
+
+
+
+
+dvcKeyNum=3
+dvcValueNum=$((32+4)) # for md5
+#dvcValueNum=$((64+4)) # for sha256
+
+mvcKeyNum=3
+mvcValueNum=$((32+4)) # for md5
+#dvcValueNum=$((64+4)) # for sha256
+
+uuidKeyNum=4
+uuidValueNum=36
+
+# total file name charaters
+totalChar=256
+# delimiter count
+delCount=3
+
+
+
+##############################
+# temp data folder 
+#tmpFileLocation=$HOME/phytoMorphTK/tmpData/
+# new install sets the tmp location
+tmpFileLocation=$PHYTO_TMP
+# remove the tmp location - pre clean if needed
+rm -rf $tmpFileLocation || true
+# make directory
+mkdir -p $tmpFileLocation
+##############################
+
+
+# make spacer image for tile strip
+blankImage=$tmpFileLocation'white.png'
+
+# pad amount between tiles
+padSize='100x100'
+
+# tile strip generator version
+version=1
+
+# make pad image
+convert -size $padSize canvas:white $blankImage
+
+# gather data for title
+echo "Please enter the tile-strip title."
+read title
+titleHeight=100
+
+# gather the total number of tile in the strip
+echo "Please enter the total number of meta-data tiles in the QR strip."
+echo "Do NOT count the first and last QR-codes in th chain."
+read tileTotalNumber
+
+# gather the number of sample
+echo "Please enter the number of sample specific QR codes in the chain"
+read sampleSpecific
+
+# query user for USB port
+echo "Which USB port are you generating a tile array for?"
+read USBport
+
+# init the device type for the down stream commands
+echo "Please select device type."
+echo '[1]-Scanner'
+echo '[2]-Camera'
+read deviceType
+case $deviceType in
+	1) 
+	deviceType='scanner'
+	;;
+	2)
+	deviceType='camera'
+	;;
+esac
+
+resolutionKey='resolution'
+
+
+# if scanner - please enter the resolution
+resolution='NaN'
+if [ "$deviceType" = "scanner" ]
+then
+	echo "Please enter the scanner resolution."
+	echo '[1] - 100'
+	echo '[2] - 600'
+	echo '[3] - 1200'
+	echo '[4] - 2400'
+	echo '[5] - 4800'
+	echo '[6] - See Sample Code'	
+	read resolution
+fi
+
+# assign the value for the key
+case $resolution in
+	1)
+	resolution=100	
+	;;
+	2)
+	resolution=600	
+	;;
+	3)
+	resolution=1200	
+	;;
+	4)
+	resolution=2400
+	;;
+	5)
+	resolution=4800	
+	;;
+	6)
+	resolution='sc'	
+	;;
+esac
+
+# set tileKey
+tileNumberKey='tileNumber'
+
+# init command 
+initCommand='{command_sessionStart}{'$devicePortKey$kvSep$USBport'}{'$tileNumberKey$kvSep$tileCount'}{'$deviceTypeKey$kvSep$deviceType'}{'$sampleKey$kvSep$sampleSpecific'}{'$versionkey$kvSep$version'}{'$totalTileNumberKey$kvSep$tileTotalNumber'}{'$resolutionKey$kvSep$resolution'}'
+
+# echo the string to the strip file
+strFile=$tmpFileLocation'tileStripText.txt'
+echo $initCommand>>$strFile
+
+# build init tile 
+./buildTile.sh $initCommand $tileCount $tmpFileLocation $fullWidth $fullHeight
+tmpTileName=$tmpFileLocation'tile'$tileCount.png
+
+# add padding image
+convert  $tmpTileName $blankImage +append $tmpFileLocation'tileArray.png'
+
+((tileCount++))
+
+# save the end stip for the final close command
+endCommand='{command_sessionEnd}{device_'$USBport'}'
+
+
+# init tile generation
+#while [ "$anotherTile" = "y" ]
+for i in $(seq 1 $tileTotalNumber)
+do
+	
+	# used file name charaters
+	usedChar=0
+	# init tile string
+	tileString='{'$dataTypeKey$kvSep$dataTypeValue'}'
+	# init File data
+	fileData=''
+	# init Folder data
+	folderData=''
+	# init addTile to yes
+	addTile='y'
+	# init the extra verification and uuid metaData fields
+	dataVerString=''
+	metadataVerString=''
+	uuidVerString=''
+	indexString=''
+	while [ "$addTile" = "y" ]
+	do
+		metaDataChoice=0
+		while [[ $metaDataChoice -lt 1  ||  $metaDataChoice -gt 8 ]]
+		do
+			# query user for information
+			echo "Do you want to add file or folder meta data to the QR tile?"
+			echo "---------------------------------"
+			echo "[1] - folder - value string"
+			echo "[2] - folder - {key_value} string"
+			echo "---------------------------------"
+			echo "[3] - file   - {key_value} string"
+			echo "[4] - file   - data verification"
+			echo "[5] - file   - meta-data verification"
+			echo "[6] - file   - file verification"
+			echo "[7] - file   - uuid"
+			echo "[8] - file   - sequence index"
+			echo "---------------------------------"
+			read metaDataChoice
+		done
+
+
+		# switch on
+		
+		case $metaDataChoice in
+			1)
+			echo "Please enter the folder meta data."
+			read metaData
+			folderData=$folderData$metaData'/'
+			echo $usedChar
+			;;
+			2)
+			echo "Please enter the folder meta_data key."
+			read metaDataKey
+			echo "Please enter the folder meta_data value."
+			read metaDataValue
+			folderData=$folderData'{'$metaDataKey$kvSep$metaDataValue'}/'
+			;;
+			3)
+			echo "Please enter the file meta_data key."
+			read metaDataKey
+			echo "Please enter the file meta_data value."
+			read metaDataValue
+			fileData=$fileData'{'$metaDataKey$kvSep$metaDataValue'}'
+			usedChar=$(($usedChar+$delCount+${#metaData}+${#metaDataValue}))
+			;;
+			4)
+			echo "Added data verification code to file name"
+			#fileData=$fileData'{'$fvcKey$kvSep$fvcType'}'
+			dataVerString='{'$dvcKey$kvSep$dvcType'}'
+			usedChar=$(($usedChar+$delCount+$dvcKeyNum+$dvcValueNum))
+			;;
+			5)
+			echo "Added meta-data verification code to file name"
+			#fileData=$fileData'{'$mvcKey$kvSep$mvcType'}'
+			metadataVerString='{'$mvcKey$kvSep$mvcType'}'
+			usedChar=$(($usedChar+$delCount+$mvcKeyNum+$mvcValueNum))
+			;;
+			6)
+			echo "Added data and meta-data verification code to file name"
+			#fileData=$fileData'{'$fvcKey$kvSep$fvcType'}'
+			#fileData=$fileData'{'$mvcKey$kvSep$mvcType'}'
+			dataVerString='{'$dvcKey$kvSep$dvcType'}'
+			metadataVerString='{'$mvcKey$kvSep$mvcType'}'
+			usedChar=$(($usedChar+$delCount+$mvcKeyNum+$mvcValueNum))
+			usedChar=$(($usedChar+$delCount+$dvcKeyNum+$dvcValueNum))
+			;;
+			7)
+			echo "Added uuid to file name"
+			#fileData=$fileData'{'$uuidKey$kvSep$uuidType'}'
+			uuidVerString='{'$uuidKey$kvSep$uuidType'}'
+			usedChar=$(($usedChar+$delCount+$uuidKeyNum+$uuidValueNum))
+			;;
+			8)
+			echo "Added file index field to file name"
+			#fileData=$fileData'{'$uuidKey$kvSep$uuidType'}'
+			indexString='{'$iCountKey$kvSep$iCountType'}'
+			usedChar=$(($usedChar+$delCount+$uuidKeyNum+$uuidValueNum))
+			;;
+		esac
+		remainingChar=$(($totalChar - $usedChar))
+		echo "Character count in file name:"
+		echo "Total: $totalChar Used: $usedChar Remaining: $remainingChar"
+		echo "Current folder data is:"
+		echo $baseFolder$folderData
+		echo "Current file data is:"
+		echo $fileData
+		echo "Do you want to add more meta-data to this tile? (y/n)"
+		read addTile
+	done
+	
+
+	fileData=$fileData$indexString$uuidVerString$dataVerString$metadataVerString
+
+	# create folder data
+	if [ "$folderData" != '' ]
+	then
+		tileString=$tileString'{'$folderKey$kvSep$folderData'}'
+	fi
+	
+	# create file data 
+	if [ "$fileData" != '' ]
+	then
+		tileString=$tileString'{'$fileKey$kvSep$fileData'}'
+	fi
+
+	tileString=$tileString'{'$tileNumberKey$kvSep$tileCount'}'
+
+	# echo the string to the strip file
+	echo $tileString>>$strFile
+
+	# build tile
+	buildTile.sh $tileString $tileCount $tmpFileLocation $fullWidth $fullHeight
+
+	# This has been changed to enter the number of tiles before starting
+	# query user for another
+	#echo "Do you want to add another tile? (y/n)"
+	#read anotherTile
+
+	# increment tileCount
+	((tileCount++))
+done
+
+endCommand=$endCommand'{'$tileNumberKey$kvSep$tileCount'}'
+
+# echo the string to the strip file
+echo $endCommand>>$strFile
+
+# increment tileCount for the end
+((tileCount++))
+
+
+
+totalTiles=$(($tileCount-1))
+tileCount=1
+fileList=()
+while read tileString; do
+	# current file name
+	tmpTileName=$tmpFileLocation'tile'$tileCount.png
+	fileList+=( $tmpTileName )
+	if [ "$tileCount" -ne "$totalTiles" ]
+	then
+		fileList+=( $blankImage )
+	fi
+	# build tile
+	buildTile.sh $tileString $tileCount $tmpFileLocation $fullWidth $fullHeight
+	# increment the tile count	
+	((tileCount++))
+done <$strFile
+
+
+# stitch the files together
+convert  ${fileList[@]} +append $tmpFileLocation'tileArray.png'
+
+# query the width of the QR
+W=$(identify -ping -format '%w' $tmpFileLocation'tileArray.png')
+
+# query the height of the QR
+H=$(identify -ping -format '%h' $tmpFileLocation'tileArray.png')
+
+# build the title
+convert -size $W'x'$titleHeight  -gravity Center -background white -fill black -pointsize 40 -font Helvetica label:"$title" $tmpFileLocation'title.png'
+
+# add the title
+convert $tmpFileLocation'title.png'  $tmpFileLocation'tileArray.png'  -append $tmpFileLocation'tileArray.png'
+
+# copy the tile strip to home folder
+cp $tmpFileLocation'tileArray.png' $HOME/'tileStrip_usbPort'$USBport.png
+
+# remove the tmp location
+rm -r $tmpFileLocation

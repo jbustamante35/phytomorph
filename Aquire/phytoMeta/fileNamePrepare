@@ -1,0 +1,75 @@
+#!/bin/bash
+# source file to check - this is post fileNameParse
+fileName=$1
+
+# store the original file name
+oFileName=$filename
+
+dateSep='~'
+nfileNameString=''
+
+
+fileName=$(basename -- "$fileName")
+extension="${fileName##*.}"
+fileName="${fileName%.*}"
+
+nd=$(kvpCount $fileName)
+
+
+dvc_toAdd=true
+mvc_toAdd=true
+
+for kv in $(seq 1 1 $nd)
+do
+	i=$(($kv-1))
+
+	# get the key-value-pair by index
+	kvp=$(kvpIndex $i $fileName)
+	
+	# get the key value pairs
+	v=$(getValue $kvp)
+	k=$(getKey $kvp)
+
+	#echo "KVP:" $kvp
+	#echo "KVP-K:" $k
+	#echo "KVP-V:" $v
+
+	firstletter=${v:0:1}
+	case $k in
+		dvc)
+			dvcKVP=$kvp
+			dvc_toAdd=false
+		;;
+		mvc)
+			mvcKVP=$kvp
+			mvc_toAdd=false
+		;;
+		*)
+			# reattach the kvp
+			nfileNameString=$nfileNameString$kvp
+		;;
+	esac
+done
+
+# add data key if needed
+if [ $dvc_toAdd = true ]
+then
+	v=$(genHash sha512 $oFileName)
+	k="dvc"
+	dvcKVP='{'$k'_sha512-'$v'}'
+fi
+nfileNameString=$nfileNameString$dvcKVP
+
+# add meta data key if needed
+if [ $mvc_toAdd = true ] 
+then
+	v=$(genHash s-sha512 $nfileNameString)
+	k="mvc"
+	mvcKVP='{'$k'_sha512-'$v'}'
+fi
+nfileNameString=$nfileNameString$mvcKVP
+
+# add back extension
+nfileNameString=$nfileNameString'.'$extension
+# report the new file name
+echo $nfileNameString

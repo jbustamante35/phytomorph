@@ -1,0 +1,8 @@
+#!/bin/bash
+# last edited on Jan, 02 2020
+# this program will extact the port to the device from a line in a file - if i remember
+#lsusb | sed -e 's/Bus \([0-9]\+\) Device \([0-9]\+\).*/\1:\2/g' > pre.txt
+bus=$(echo $1 | cut -d: -f1)
+port=$(echo $1 | cut -d: -f2)
+dev=$(usb-devices | grep T: | grep "Bus=$bus" | grep "Port=$port" | cut -d'#' -f2 | cut -d= -f2 | cut -d ' ' -f2)
+echo $dev

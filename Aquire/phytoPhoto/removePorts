@@ -1,0 +1,24 @@
+#!/bin/bash
+# last edited on Jan, 02 2020
+# looks like this will remove all ports from the database that are not plugged in
+# this will be tested today - hope to report on the testing here
+# report=?
+
+if [ "$#" -eq 0 ]
+then
+	echo -e "Make sure all your needed devices are plugged in and on!"
+	read nothing
+fi
+
+busPortList=$(sqlite3 $PHYTOPORTS_DB_FILE ".separator ","" "select id from ports";)
+#for port in $(echo ${busPortList} | sed "s/,/ /g")
+for port in $busPortList
+    do
+	dev=$(usb_port_2_device $port)
+	if [ "$dev" = "" ]
+	then
+		echo "Deleting Port $port from bank"
+		deletePorts $port
+	fi
+	
+    done

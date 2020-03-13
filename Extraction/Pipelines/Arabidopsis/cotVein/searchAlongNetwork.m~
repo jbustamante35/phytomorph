@@ -1,0 +1,18 @@
+function [path,pathcost] = searchAlongNetwork(Adj,networkList,targetList,source)
+    path = {};
+    pathcost = [];
+    if (~isempty(networkList) & ~isempty(source))
+        % find the source id
+        q1 = find(networkList(:,1) == source(1) & networkList(:,2) == source(2));
+        parfor stpi = 1:size(targetList,1)
+            % find the target id
+            q2 = find(networkList(:,1) == targetList(stpi,1) & networkList(:,2) == targetList(stpi,2));
+            % search the network
+            [path{stpi} , pathcost(stpi)] = dijkstra(Adj, q1 , q2);
+            % calculate
+            if pathcost(stpi) ~= Inf
+                pathcost(stpi) = sum(sum(diff(networkList(path{stpi},:)).^2,2).^.5,1);
+            end
+        end
+    end
+end

@@ -1,0 +1,21 @@
+#!/bin/bash
+# the id object to pull
+id="$1"
+id=$(echo "$1" | jq '{uuid,type}' | tr -d '\n' | tr -d ' ' | tr -d '\t')
+# the type of object
+type=$(echo "$id" | jq '.type')
+l=${#type}
+l=$((l-2))
+type=${type:1:$l}
+# get the hash of the id
+hash=$(echo -n $id | sha256sum)
+# cut the ash
+hash=$(echo "$hash" | cut -d' ' -f 1)
+prefix=${hash:0:2}
+# make the file name of the object
+ofile="$PHYTO_OBJECTS$type"'/'"$prefix"
+ofile="$ofile"'/'"$hash"
+# read in the object
+object=$(<"$ofile")
+# echo the data
+echo $object

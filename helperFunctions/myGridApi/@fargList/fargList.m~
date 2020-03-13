@@ -1,0 +1,43 @@
+classdef fargList
+    properties
+        
+    end
+    
+    properties (Constant)
+         classDef = [functionObjects.defaultDomain 'ClassDef/fargList'];
+         classDefContain = [functionObjects.defaultDomain 'ClassDef/containsArgument'];
+    end
+    
+    methods
+        function [obj] = fargList(values,valueDatabase,valueStream)
+            contains = vf.createURI(farg.classDefContain);
+            for e = 1:numel(values)
+                tmpObj = farg(values{e},e,valueDatabase,valueStream,1);
+                objectID = vf.createURI(farg.objectDomain,tmpObj.uniqueKey);
+                
+            end 
+        end
+    end
+    
+    methods (Static)
+        function [] = renderClass(valueDatabase)
+            import com.franz.agraph.repository.AGServer
+            import org.openrdf.model.vocabulary.RDF
+            import org.openrdf.model.vocabulary.OWL
+            import org.openrdf.model.vocabulary.RDFS
+            import org.openrdf.query.QueryLanguage
+            vf = valueDatabase.getRepository().getValueFactory();
+            cont = javaArray('org.openrdf.model.Resource',1);
+            cont(1) = [];
+            % create class def forobject
+            classDef = vf.createURI(fargList.classDef);
+            valueDatabase.add(classDef,RDF.TYPE,RDFS.CLASS,cont);
+            % create contains class
+            classDefContains = vf.createURI(fargList.classDefContains);
+            valueDatabase.add(classDefContains,RDF.TYPE,RDFS.CLASS,cont);
+            % create contains type
+            contains = vf.createURI(farg.classDefContain);
+            valueDatabase.add(contains,RDF.TYPE,classDefContains,cont);
+        end
+    end
+end

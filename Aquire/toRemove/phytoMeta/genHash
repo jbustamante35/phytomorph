@@ -1,0 +1,20 @@
+#!/bin/bash
+type=$1
+fileName=$2
+case $type in
+	md5)
+	hashV=$(md5sum $fileName)
+	;;
+	sha256)
+	hashV=$(sha256sum $fileName)
+	;;
+	s-md5)
+	hashV=$(echo -n $fileName | md5sum)
+	;;
+	s-sha256)
+	hashV=$(echo -n $fileName | sha256sum)
+	;;
+esac
+hash=$(echo $hashV | cut -d" " -f 1)
+echo $hash
+		

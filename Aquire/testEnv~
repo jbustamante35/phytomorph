@@ -1,0 +1,10 @@
+#!/bin/bash
+OLDIFS=$IFS 
+IFS=$'\n' 
+for line in $(cat ~/phytoMorphTK/tmpFiles/envVar)
+do 
+	eval $line
+	echo $line
+	echo $PHYTOSTREAMS_BASE_BUFFER
+done
+IFS=$OLDIFS

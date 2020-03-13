@@ -1,0 +1,5 @@
+#!/bin/bash
+# this will remove the streams and recreate the database
+# last edited: Jan 6, 2020
+rm ~/phytoMorphTK/dataBaseFiles/dataStreams.db
+createStreamsDB

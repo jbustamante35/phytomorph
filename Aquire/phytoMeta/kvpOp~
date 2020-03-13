@@ -1,0 +1,26 @@
+#!/bin/bash
+cmd="$1"
+obj="$2"
+
+case "$cmd" in
+	append)
+		# kvp to add
+		element="$3"
+		# add to list
+		obj=$(./addKVP "$obj" "$element")
+	;;
+	mod)
+		# key to mod
+		key="$3"
+		# value to change to
+		value="$4"
+		echo "$obj"
+		obj=$(echo "$obj" | jq --arg k "$key" --arg v "$value" '.[$k]=$v')
+	;;
+	search)
+
+	;;
+esac
+# save the mod object
+./pushJobject "$obj"
+echo $obj

@@ -1,0 +1,24 @@
+function [] = persistExistanceToStream(value,uniqueKey,indirectValueString,valueDatabase)
+    import com.franz.agraph.repository.AGServer
+    import org.openrdf.model.vocabulary.RDF
+    import org.openrdf.model.vocabulary.OWL
+    import org.openrdf.model.vocabulary.RDFS
+    import org.openrdf.query.QueryLanguage
+    vf = valueDatabase.getRepository().getValueFactory();
+    cont = javaArray('org.openrdf.model.Resource',1);
+    cont(1) = [];
+    psNameSpace = functionObjects.defaultDomain;
+    uniqueKey = ['farg/' uniqueKey];
+    classDef = vf.createURI(farg.classDef);
+    object = vf.createURI(psNameSpace,uniqueKey);
+    valueDatabase.add(object, RDF.TYPE,classDef ,cont);
+    directContainment = vf.createURI(farg.DCV_type);
+    if ischar(value)
+        directContainment = vf.createURI(farg.DCV_type);
+        valueURL = vf.createURI(value);
+        
+        valueDatabase.add(object,directContainment,valueURL);
+    end
+    
+    
+end

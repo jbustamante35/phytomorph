@@ -1,0 +1,179 @@
+#!/bin/bash
+baseFolder=$HOME'/imageStore/'
+kvSep='_'
+anotherTile='y'
+tileCount=1
+# key used to encode values for folder routing
+folderKey='fr'
+# key used to encode values for file rounting
+fileKey='fe'
+tileString=''
+fullHeight=110
+fullWidth=120
+
+# temp data folder 
+tmpFileLocation=$HOME/phytoMorphTK/tmpData/
+mkdir -p $tmpFileLocation
+
+# make spacer image for tile strip
+blankImage=$tmpFileLocation'white.png'
+
+# pad amount between tiles
+padSize='100x100'
+
+# make pad image
+convert -size $padSize canvas:white $blankImage
+
+# query user for USB port
+echo "Which USB port are you generating a tile array for?"
+read USBport
+
+# init command 
+initCommand='{command_sessionStart}{device_'$USBport'}'
+
+# echo the string to the strip file
+strFile=$tmpFileLocation'tileStripText.txt'
+echo $initCommand>>$strFile
+
+# build init tile 
+./buildTile.sh $initCommand $tileCount $tmpFileLocation $fullWidth $fullHeight
+tmpTileName=$tmpFileLocation'tile'$tileCount.png
+
+# add padding image
+convert  $tmpTileName $blankImage +append $tmpFileLocation'tileArray.png'
+
+((tileCount++))
+
+# save the end stip for the final close command
+endCommand='{command_sessionEnd}{device_'$USBport'}'
+
+# gather data for title
+echo "Please enter the tile-strip title."
+read title
+titleHeight=100
+
+# init tile generation
+while [ "$anotherTile" = "y" ]
+do
+	# init tile string
+	tileString=''
+	# init File data
+	fileData=''
+	# init Folder data
+	folderData=''
+	# init addTile to yes
+	addTile='y'
+	while [ "$addTile" = "y" ]
+	do
+		# query user for information
+		echo "Do you want to add file or folder meta data to the QR tile?"
+		echo "[1] - folder - value string"
+		echo "[2] - folder - {key_value} string"
+		echo "[3] - file   - {key_value} string"
+		read metaDataChoice
+
+		# switch on
+		case $metaDataChoice in
+			1)
+			echo "Please enter the folder meta data."
+			read metaData
+			folderData=$folderData$metaData'/'
+			;;
+			2)
+			echo "Please enter the folder meta_data key."
+			read metaDataKey
+			echo "Please enter the folder meta_data value."
+			read metaDataValue
+			folderData=$folderData'{'$metaDataKey$kvSep$metaDataValue'}/'
+			;;
+			3)
+			echo "Please enter the file meta_data key."
+			read metaDataKey
+			echo "Please enter the file meta_data value."
+			read metaDataValue
+			fileData=$fileData'{'$metaDataKey$kvSep$metaDataValue'}'
+			;;
+		esac
+		echo "Current folder data is:"
+		echo $baseFolder$folderData
+		echo "Current file data is:"
+		echo $fileData
+		echo "Do you want to add more meta-data to this tile? (y/n)"
+		read addTile
+	done
+	
+	# create folder data
+	if [ "$folderData" != '' ]
+	then
+		tileString=$tileString'{'$folderKey$kvSep$folderData'}'
+	fi
+	
+	# create file data 
+	if [ "$fileData" != '' ]
+	then
+		tileString=$tileString'{'$fileKey$kvSep$fileData'}'
+	fi
+
+	# echo the string to the strip file
+	echo $tileString>>$strFile
+
+	# build tile
+	./buildTile.sh $tileString $tileCount $tmpFileLocation $fullWidth $fullHeight
+
+	# query user for another
+	echo "Do you want to add another tile? (y/n)"
+	read anotherTile
+
+	# increment tileCount
+	((tileCount++))
+done
+
+# echo the string to the strip file
+echo $endCommand>>$strFile
+
+# increment tileCount for the end
+((tileCount++))
+
+
+
+
+
+
+totalTiles=$(($tileCount-1))
+tileCount=1
+fileList=()
+while read tileString; do
+	# current file name
+	tmpTileName=$tmpFileLocation'tile'$tileCount.png
+	fileList+=( $tmpTileName )
+	if [ "$tileCount" -ne "$totalTiles" ]
+	then
+		fileList+=( $blankImage )
+	fi
+	# build tile
+	./buildTile.sh $tileString $tileCount $tmpFileLocation $fullWidth $fullHeight
+	# increment the tile count	
+	((tileCount++))
+done <$strFile
+
+
+# stitch the files together
+convert  ${fileList[@]} +append $tmpFileLocation'tileArray.png'
+
+# query the width of the QR
+W=$(identify -ping -format '%w' $tmpFileLocation'tileArray.png')
+
+# query the height of the QR
+H=$(identify -ping -format '%h' $tmpFileLocation'tileArray.png')
+
+# build the title
+convert -size $W'x'$titleHeight  -gravity Center -background white -fill black -pointsize 40 -font Helvetica label:"$title" $tmpFileLocation'title.png'
+
+# add the title
+convert $tmpFileLocation'title.png'  $tmpFileLocation'tileArray.png'  -append $tmpFileLocation'tileArray.png'
+
+# copy the tile strip to home folder
+cp $tmpFileLocation'tileArray.png' $HOME/'tileStrip_usbPort'$USBport.png
+
+# remove the tmp location
+rm -r $tmpFileLocation

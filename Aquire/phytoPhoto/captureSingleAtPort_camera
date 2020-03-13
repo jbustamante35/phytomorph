@@ -1,0 +1,28 @@
+#!/bin/bash
+# single capture of image
+# $1 := port name for the device
+# $2 := path for the image
+# $3 := name for the image
+# $4 := if called from loop this var is the counter
+if [ "$#" -eq "4" ]
+	countVar=$4
+else
+	countVar='NA'
+fi
+# script was last edited on Jan, 03 2020
+# last edited on Jan, 17 2020 - adding the file mover
+# and added the tmp
+tmpFile=$(mktemp)
+# lock
+lockPort $1
+# get the bus port from the SQLite database
+busport=$(getBusportFromID $1)
+# format for gphoto2
+busdev=$(formatBusPortForGphoto2 $busport)
+# run command
+#gphoto2 --port usb:$busdev --set-config capturetarget=1 --capture-image-and-download --force-overwrite --filename=$2$3.%C
+gphoto2 --port usb:$busdev --set-config capturetarget=1 --capture-image-and-download --force-overwrite --filename=$tmpFile.%C
+# move the file with file mover, this will parse the complex file name and capture any requested information
+fileMover $tmpFile $2$3 $countVar
+# unlock the port
+unlockPort $1

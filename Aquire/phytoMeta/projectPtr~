@@ -1,0 +1,24 @@
+#!/bin/bash
+# object to get a pointer for
+refs="$1"
+# assign the refsKey
+refsKey='refs'
+# get the projected-ID for the objet 
+refsValue=$(./projectId "$refs")
+# get the type
+type=$(echo "$refsValue" | jq '.type')
+# get the type length
+l=${#type}
+l=$((l-2))
+# get type from brackets
+type=${type:1:$l}
+# attach ">" to the type to indicate the pointer type
+ptrType=">"$type
+# generate the pointer
+ptr=$(genNewObject "$ptrType")
+# make the key value pair to add 
+refs=$(jo "$refsKey"="$refsValue")
+# add the key-vlue refs pair
+ptr=$(addKVP "$ptr" "$refs")
+# return the pointer
+echo $ptr

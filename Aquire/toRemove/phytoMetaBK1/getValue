@@ -1,0 +1,29 @@
+#!/bin/bash
+# mod on Jan 17,2020
+# the old way - listed below - assumed that the value would have no key-value-pairs
+# this new way does not make that assumption
+# read the kvp value pair from input
+kvp=$1
+# length of key value pair
+N=${#kvp}
+# get the key
+#k=$(echo $kvp | cut -d_ -f 1)
+k=$(./getKey $kvp)
+# get the key length + 1 for for the opening {
+keyLength=${#k}
+# value index start
+vIdx=$(($keyLength+2))
+# value length
+valueLength=$(($N-$keyLength-3))
+v=${kvp:vIdx:$valueLength}
+echo $v
+
+
+# old way
+#kvp=$1
+#N=${#kvp}
+#k=$(echo $kvp | cut -d_ -f 2)
+#l=${#k}
+#l=$(($l-1))
+#k=${k:0:$l}
+#echo $k

@@ -1,0 +1,9 @@
+#!/bin/bash
+# pointer to object
+ptr=$1
+# extract the link
+refs=$(echo "$ptr" | jq '.refs')
+# pull the object
+object=$(./pullJobject "$refs")
+# report the object
+echo $object

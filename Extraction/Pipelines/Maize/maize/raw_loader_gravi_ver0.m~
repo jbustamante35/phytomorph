@@ -1,0 +1,37 @@
+function [] = raw_loader_gravi_ver0()
+    %% find the mat files to load from
+    FilePath = '/mnt/snapper/nate/myDev/maizeWhole_mini7/';
+    FileList = {};
+    FileExt = {'mat'};
+    verbose = 1;
+    FileList = gdig(FilePath,FileList,FileExt,verbose);
+    %%
+    % down sample the frames by this amount
+    frDS = 1;
+    % if disp is on for rendering data to screen
+    dispi = 0;
+    % if disp is on for the first frame
+    fdispi = 0;
+    % color choices
+    CL = {'r' 'b' 'g' 'k' 'y' 'c' 'm' 'c'};
+    close all
+    MasterTipAngle = [];
+    MasterGrowthSur = [];
+    masterName = {};
+    setupName = {};
+    plateName = {};
+    allLost = {};
+    seedlingNumber = [];
+    matFile = {};
+    iPath = {};
+    toKeep = [];
+    fprintf(['Start\n']);
+   
+    %%%%%%%%%%%%%%%%%%%%%
+    % for each file
+    %%%%%%%%%%%%%%%%%%%%%
+    parfor m = 1:numel(FileList)
+        fprintf(['Starting on load of:' num2str(m) '\n']);
+        graviExtractCore(FileList{m});
+    end
+end

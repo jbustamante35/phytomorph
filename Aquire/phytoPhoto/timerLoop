@@ -1,0 +1,50 @@
+#!/bin/bash
+# last edited on Jan, 02 2020
+# parameters are listed below
+# this program will loop over given script N times
+# and sleep between each call of the program
+# I have had problems with the timer script
+# as different bash/os calls are needed to time the call to the program
+# I do not know the "error" in the timing and would only use this for
+# situations that allow for non-perfect timing
+# all the variables after [1-3] are passed to the program ($3)
+# along with the count varaible of the loop
+# this means that the program called will take M+1 variables
+C=1
+# the first parameter is the number of times to loop
+N=$1
+(( N++ ))
+# second parameter is the sleep time - including the execute time
+SLEEP=$2
+# the third variable is the program
+PROGRAM=$3
+# shift/remove the other variables and pass them to the program
+shift 3
+# while the count is less than N
+while [ $C -lt $N ]
+do
+	# init the commandstring - note that the syntax for the command demands
+	# that the last input is the count variable
+	CMD=$(echo $PROGRAM "$@" $C)
+	# echo the command
+	echo $CMD
+	# record the start time
+	START_TIME=$(date +%s%3N)
+	# eval the command
+	eval $CMD
+	# calculate the elapsed time
+	E_TIME=$(expr $(date +%s%3N) - $START_TIME)
+	# convert the elapsed time to seconds
+	E_TIME=$(( $E_TIME / 1000 ))
+	# echo the comamnd time
+	echo "command took: $E_TIME (s)"
+	# calculate the sleep time
+	TMP_T=$(( $SLEEP - $E_TIME ))
+	# echo the amount of sleep time
+	echo "sleeping for: $TMP_T  (s) of requested: $SLEEP (s)"
+	# sleep for the amount of requested time
+	sleep $TMP_T
+	# increment the variable
+	(( C++ ))
+done
+

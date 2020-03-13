@@ -1,0 +1,17 @@
+function [S] = myGen3(e)
+    n = 3;
+    N = n^2;
+    
+    nB = round(e/64);
+    
+    X = [];
+    
+    for e = 0:(nB - 1)
+        X = [X ones(1,64)];
+    end
+    
+    
+    X = bitget(uint64(e-1),1:N)
+    
+    S = double(reshape(,[n n]));
+end

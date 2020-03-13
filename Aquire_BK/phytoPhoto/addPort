@@ -1,0 +1,20 @@
+#!/bin/bash
+# script to add devices
+toAdd="y"
+while [ "$toAdd" = "y" ]
+do
+	# call to init_port script
+	usb_init_port
+	# read in the new port from the tmpNewPort file
+	port=$(<tmpNewPort)
+	if [ "$port" != "" ]
+	then
+		# create new port in database
+		createPort $port
+		# get the database ID from the port
+		id=$(getportIDfromBusport $port)
+		echo "This port is named: $id"
+	fi
+	echo -e "Add another port (y/n)?"
+	read toAdd
+done

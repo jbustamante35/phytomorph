@@ -1,0 +1,8 @@
+#!/bin/bash
+busPortList=$(sqlite3 ~/phytoMorph/dataBaseFiles/dataPorts.db ".separator ","" "select busport from ports";)
+for i in $(echo ${busPortList} | sed "s/,/ /g")
+    do
+	dev=$(./usb_port_2_device $i)
+	echo "busPort:$i --> device:$dev"
+	
+    done

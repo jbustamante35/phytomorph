@@ -1,0 +1,13 @@
+#!/bin/bash
+# computer name
+name=$1
+# computer key
+computerNameKey='hName'
+# create new object
+coreKVP=$(./genNewObject 'computer')
+# make computer name kvp
+kvp=$(jo "$computerNameKey"="$name")
+# glue name to object
+coreKVP=$(addKVP "$coreKVP" "$kvp")
+echo $coreKVP
+

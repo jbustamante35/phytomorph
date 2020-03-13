@@ -1,0 +1,15 @@
+#!/bin/bash
+toAdd="y"
+while [ "$toAdd" = "y" ]
+do
+	./usb_init_port
+	port=$(<tmpNewPort)
+	if [ "$port" != "" ]
+	then
+		./createPort $port
+		id=$(./getportIDfromBusport $port)
+		echo "This port is named: $id"
+	fi
+	echo -e "Add another port (y/n)?"
+	read toAdd
+done

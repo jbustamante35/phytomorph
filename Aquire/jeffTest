@@ -1,0 +1,66 @@
+#!/bin/bash
+csvFile=$1
+searchN=$2
+OLDIFS=$IFS
+#IFS=','
+header=$(head -1 $csvFile)
+N=${#header}
+header=${header//,/}
+M=${#header}
+F=$(($N-$M))
+fieldNames=()
+
+header=$(head -1 $csvFile)
+
+for i in $(seq 1 $F)
+do 
+	f=$(echo $header | cut -d, -f $i)
+	fieldNames+=( "$f" )
+done
+
+s=$(seq 0 $(($F-1)))
+
+lineNumber=0 
+flag=true
+while read line && [ "$flag" == true ]
+do
+	values=()
+
+	#for v in $(seq 1 $F)
+	#do
+	#	tmp=$(echo $line | cut -d, -f $v)
+	#	echo "TMP:"$v":"$tmp
+    	#	values+=( "$tmp" )
+	#done
+
+        if [ "$lineNumber" -eq "$searchN" ]
+	then
+	flag=false
+
+
+
+       	for v in $(seq 1 $F)
+        do
+                tmp=$(echo $line | cut -d, -f $v)
+                values+=( "$tmp" )
+        done
+
+
+
+
+	echo '------------------------------------'
+	echo "* record number : $lineNumber      *"
+	echo '------------------------------------'
+	
+	for l in $s
+	do
+		echo ${fieldNames[$l]} ':' ${values[$l]}
+	done
+
+	echo '------------------------------------'
+
+	fi
+	(( lineNumber ++ ))
+
+done < $csvFile
+IFS=$OLDIFS

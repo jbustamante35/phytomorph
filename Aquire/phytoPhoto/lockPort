@@ -1,0 +1,2 @@
+#!/bin/bash
+sqlite3 $PHYTOPORTS_DB_FILE "UPDATE ports SET busy=1 WHERE id=$1;"

@@ -1,0 +1,41 @@
+#!/bin/bash
+UBUNTU_CODENAME=$(grep UBUNTU_CODENAME /etc/os-release | cut -d'=' -f2)
+# grab a key file - signed by condor team
+wget https://research.cs.wisc.edu/htcondor/ubuntu/HTCondor-Release.gpg.key
+# add get to apt
+apt-key add HTCondor-Release.gpg.key
+#  place condor repo into the computer repo
+echo "deb http://research.cs.wisc.edu/htcondor/ubuntu/8.9/$UBUNTU_CODENAME $UBUNTU_CODENAME contrib" >> /etc/apt/sources.list
+echo "deb-src http://research.cs.wisc.edu/htcondor/ubuntu/8.9/$UBUNTU_CODENAME $UBUNTU_CODENAME contrib" >> /etc/apt/sources.list
+# run update
+apt-get update
+# install condor and depend
+apt-get install libglobus-gss-assist3 htcondor
+# get config files
+wget https://de.cyverse.org/dl/d/FA7254D5-2EAA-4A11-914A-5538C5CD5977/htcondor_file_transfer_config.zip
+unzip htcondor_file_transfer_config.zip -d /etc/condor/config.d/
+mkdir /etc/condor/{tokens.d,passwords.d}
+sep="_"
+echo "Please enter your institution."
+read institution
+institution="${institution// /}"
+echo "Please enter the lab's principal investigator."
+read pi
+pi="${pi// /}"
+echo "Please enter the building name."
+read buildingName
+buildingName="${buildingName// /}"
+echo "Please enter the room number."
+read roomNumber
+roomNumber="${roomNumber// /}"
+RANDOM_ID=$(printf "%05d" $RANDOM)
+uniqueID=$institution$sep$pi$sep$buildingName$sep$roomNumber$sep$RANDOM_ID
+sed -i "s/uwtest0001/$uniqueID/" /etc/condor/config.d/20-Name
+echo "Please email Jason Patton at jpatton@cs.wisc.edu for an authentication token."
+echo "Please include the unique computer name in the email."
+echo "Unique computer name:" $uniqueID
+# enable the condor service
+systemctl enable condor.service
+
+
+

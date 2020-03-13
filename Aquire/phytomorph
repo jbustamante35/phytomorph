@@ -1,0 +1,30 @@
+#/bin/bash
+echo "********************************************************"
+echo "*  Welcome to the phytomorph data aquisation platform  *"
+echo "*			Version 1.0			     *"
+echo "*		Created Date: Janurary 2020     	     *"
+echo "********************************************************"
+echo "Please select one from the below menu."
+echo "[0] Image Acquisition Bank"
+echo "[1] plantProfiler"
+echo "[2] USB Device Menu"
+echo "[3] Image Acquisition Bank"
+echo "[4] QR Label Generator"
+echo "[5] Install Menu"
+
+read selection
+
+case $selection in
+	0)
+	install_phytoMorph_toolKits.sh
+	;;
+	1)
+	portBankMenu
+	;;
+	2)
+	portBankMenu
+	;;
+	3)
+	run_deviceBank /usr/local/MATLAB/MATLAB_Runtime/v93
+	;;
+esac

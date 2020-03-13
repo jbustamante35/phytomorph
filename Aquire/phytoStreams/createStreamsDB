@@ -1,0 +1,20 @@
+#!/bin/bash 
+# last edited: Jan 6, 2020
+# ---------------------------------------#
+# program - text - program using the stream
+# mode - text - cyverseBuffer xor cyverseStream
+# number - int - the unqiue id of stream
+# target - text - the location of the target 
+# ---------------------------------------#
+mkdir -p ~/phytoMorphTK/dataBaseFiles/
+# streams table
+sqlite3 $PHYTOSTREAMS_DB_FILE "CREATE TABLE IF NOT EXISTS streams (id INTEGER PRIMARY KEY,program TEXT, mode TEXT,number INTEGER,active INTEGER, target TEXT, source TEXT, createDate TEXT, UNIQUE (program,mode,number));"
+# ---------------------------------------#
+# file queue table
+# program - text - program which is buffering
+# mode - 
+# ---------------------------------------#
+sqlite3 $PHYTOSTREAMS_DB_FILE "CREATE TABLE IF NOT EXISTS fileQueue (id INTEGER PRIMARY KEY, program TEXT, mode TEXT, number INTEGER, file TEXT,isQueued INTEGER);"
+# ---------------------------------------#
+# job table
+sqlite3 $PHYTOSTREAMS_DB_FILE "CREATE TABLE IF NOT EXISTS jobQueue (id INTEGER PRIMARY KEY, program TEXT, file TEXT, isQueued INTEGER);"

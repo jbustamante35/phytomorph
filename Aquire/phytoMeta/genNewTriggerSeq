@@ -1,0 +1,37 @@
+#!/bin/bash
+# sequence title
+title=$1
+# number of meta tiles
+metaN=$2
+# number of sample tiles
+sampleN=$3
+# target - usbPort pointer
+usbPtr=$4
+# keys
+keys[0]='title'
+keys[1]='metaN'
+keys[2]='sampleN'
+keys[3]='usbPtr'
+# values
+values[0]=$title
+values[1]=$metaN
+values[2]=$sampleN
+values[3]=$usbPtr
+# create new object
+coreKVP=$(./genNewObject 'triggerSeq')
+# generate objects
+cnt=0
+for k in ${keys[@]}
+do
+	tmpKVP=$(jo "$k"="${values[$cnt]}")
+	coreKVP=$(./addKVP "$coreKVP" "$tmpKVP")
+	cnt=$((cnt + 1))
+done
+# get ptr for this
+thisPtr=$(./projectPtr "$coreKVP")
+########################
+# look up usbPort and add this trigger to its list
+obj=$(./iprojectPtr "$usbPtr")
+obj=$(./arrayOp 'append' "$obj" 'triggerList' "$thisPtr")
+########################
+echo $coreKVP

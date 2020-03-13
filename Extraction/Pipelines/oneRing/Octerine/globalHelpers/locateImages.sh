@@ -1,0 +1,1 @@
+locate -d /mnt/scratch4/spaldingdata.db -d /mnt/scratch4/tetra.db -d /mnt/scratch4/spaldingimages.db -d /mnt/scratch4/snapper.db --regex '(TIF|JPG|JPEG|JPEG|TIF|BMP|PNG|NEF|tif|jpg|jpeg|jpeg|tif|bmp|png|nef)$' >> imageFileList.txt

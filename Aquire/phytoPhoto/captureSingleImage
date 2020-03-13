@@ -1,0 +1,21 @@
+#!/bin/bash
+# single capture of image
+# $1 := device type
+# $2 := port name for the device
+# $3 := path for the image
+# $4 := name for the image
+# script was last edited on Jan, 03 2020
+lockPort $2
+deviceType=$1
+busport=$(getBusportFromID $2)
+case $deviceType in
+	scanner)
+		busdev=$(formatBusPortForScanimage $busport)
+		scanimage -d epson2:libusb:$busdev --resolution $5 --format tiff > $3$4.tif	
+	;;
+	camera)
+		busdev=$(formatBusPortForGphoto2 $busport)
+		gphoto2 --port usb:$busdev --set-config capturetarget=1 --capture-image-and-download --force-overwrite --filename=$3$4.%C
+	;;
+esac
+unlockPort $2

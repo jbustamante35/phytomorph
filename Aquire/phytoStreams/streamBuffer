@@ -1,0 +1,39 @@
+#!/bin/bash
+# 1:= programName
+# 2:= streamType
+# 3:= streamNumber
+manifestDate=$(date +"%S-%M-%H-%m-%d-%y")
+outFile="xfer_"$manifestDate".list"
+programName=$1
+streamType=$2"_out"
+streamNumber=$3
+# select the stream source
+streamSource=$(sqlite3 $PHYTOSTREAMS_DB_FILE "select source from streams WHERE program='$programName' AND active=1 AND number=$streamNumber AND mode='$streamType'";)
+# select the stream target
+streamTarget=$(sqlite3 $PHYTOSTREAMS_DB_FILE "select target from streams WHERE program='$programName' AND active=1 AND number=$streamNumber AND mode='$streamType'";)
+
+# select the files which are queued to be streams from this source to the target and write out csv file
+#streamFileList=$(sqlite3 -csv $PHYTOSTREAMS_DB_FILE "select file from fileQueue WHERE isQueued=1 AND program='$programName' AND number=$streamNumber AND mode='$streamType'";)
+# select the files which are queued to be streams from this source to the target and write out csv file
+sqlite3 -csv $PHYTOSTREAMS_DB_FILE "select file from fileQueue WHERE isQueued=1 AND program='$programName' AND number=$streamNumber AND mode='$streamType'" > $outFile
+
+while read tmpFile
+do
+	# get the file name
+	filename="${tmpFile##*/}"
+	# get the base name
+	#basename="${tmpFile%$filename}"
+	# get the extra path from the base to the file
+	extraPath=${tmpFile#$streamSource}
+	# remove the file name from the extra path
+	extraPath=${extraPath%$filename}
+	phytoCP cyverse $tmpFile $streamTarget$extraPath $filename
+	# update the file as streamed
+	sqlite3 $PHYTOSTREAMS_DB_FILE "UPDATE fileQueue SET isQueued=0 WHERE program='$programName' AND mode='$streamType' AND number=$streamNumber AND file='$tmpFile';"
+
+done < $outFile
+
+
+#echo $streamSource
+#echo $streamTarget
+#echo $streamFileList

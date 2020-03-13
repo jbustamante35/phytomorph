@@ -1,0 +1,9 @@
+#!/bin/bash
+fileToVerify=$1
+signExt=psgn
+signatureFile=$PHYTO_SIGNATURE_BASE$fileNameToSign.$signExt
+echo "verify:"$fileNameToSign
+#echo 'signatureFile:'$signatureFile
+res=$(gpg --verify $signatureFile)
+echo $res
+#echo -n $fileToVerify | openssl dgst -sha256 -verify ~/phytoMorphTK/baseInstall/phytoPublic.pem -signature $signatureFile

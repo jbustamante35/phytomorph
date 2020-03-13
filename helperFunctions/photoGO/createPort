@@ -1,0 +1,5 @@
+#!/bin/bash
+sqlite3 ~/phytoMorph/dataBaseFiles/dataPorts.db "INSERT OR IGNORE INTO ports (busport) VALUES ('$1');"
+id=$(sqlite3 ~/phytoMorph/dataBaseFiles/dataPorts.db "SELECT id FROM ports WHERE busport='$1';")
+sqlite3 ~/phytoMorph/dataBaseFiles/dataPorts.db "UPDATE ports SET busport='$1' WHERE id='$id';"
+

@@ -1,0 +1,11 @@
+#!/bin/bash
+# commented out below line > 19_12_16
+#lsusb | sed -e 's/Bus \([0-9]\+\) Device \([0-9]\+\).*/\1:\2/g' > post.txt
+# write out new device data + old device data
+usb-devices | grep T: > post.txt
+# get the new device information
+newID=$(grep -vxFf pre.txt post.txt)
+port=$(echo $newID | cut -d: -f2 | cut -d ' '  -f5 | cut -d= -f2)
+bus=$(echo $newID | cut -d: -f2 | cut -d ' '  -f2 | cut -d= -f2)
+busport=$(echo $bus:$port)
+echo $busport > ~/tmpNewPort

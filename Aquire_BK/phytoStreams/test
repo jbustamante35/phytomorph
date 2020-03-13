@@ -1,0 +1,25 @@
+#!/bin/bash
+echo "#############################################"
+echo "Testing local copying via buffers"
+echo " This test has a root other than the file(s) root"
+echo "Expect to have the file and the extra folder strucuture rendered"
+echo "#############################################"
+echo "creating cyverse buffer stream"
+./createStream testProgram cyverseBuffer 1 1 /iplant/home/nmiller/testStreams/ /mnt/scratch1/phytomorph_dev/
+echo "streaming to buffer"
+./streamFile testProgram cyverseBuffer 1 ./test.txt
+./streamFile testProgram cyverseBuffer 1 ./test2.txt
+./streamFile testProgram cyverseBuffer 1 ./test3.txt
+echo "streaming the buffer"
+./streamBuffer testProgram cyverseBuffer 1
+
+
+echo "#############################################"
+echo "Testing remote without buffers"
+echo "#############################################"
+echo "creating cyverse stream"
+./createStream testProgram cyverseStream 2 1 /iplant/home/nmiller/testStreams/ /mnt/scratch1/phytomorph_dev/
+echo "streaming to cyverse"
+./streamFile testProgram cyverseStream 2 ./test.txt
+
+

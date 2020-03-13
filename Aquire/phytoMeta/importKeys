@@ -1,0 +1,20 @@
+#!/bin/bash
+keyLocation='/iplant/home/nmiller/prs/newFormResponse/'
+ticketName=$1
+#ticket=$(echo $ticketName | cut -d_ -f 1)
+#name=$(echo $ticketName | cut -d_ -f 2)
+ticket=$(getKey $ticketName)
+name=$(getValue $ticketName)
+iget -t $ticket $keyLocation$name $PHYTO_TMP/$name
+gpg --import $PHYTO_TMP/$name
+# shred and rm file
+shred -n 25 $PHYTO_TMP/$name
+rm $PHYTO_TMP/$name
+# trust this key
+key=$name
+{
+    echo trust
+    echo 5     	# ultimately trust
+    echo 'y'	# confirm
+    echo save
+} | gpg --command-fd=0 --status-fd=1 --pinentry-mode=loopback --edit-key $key

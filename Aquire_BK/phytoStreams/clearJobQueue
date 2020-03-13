@@ -1,0 +1,3 @@
+#!/bin/bash
+rm ~/phytoMorphTK/dataBaseFiles/dataStreams.db
+./createStreamsDB

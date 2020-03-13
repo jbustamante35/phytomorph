@@ -1,0 +1,7 @@
+#!/bin/bash
+read kvp
+k=$(echo $kvp | cut -d_ -f 1)
+l=${#k}
+l=$(($l-1))
+k=${k:1:$l}
+echo $k

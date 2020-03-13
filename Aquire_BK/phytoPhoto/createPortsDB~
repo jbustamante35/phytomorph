@@ -1,0 +1,2 @@
+#!/bin/bash 
+sqlite3 $PHYTOPORTS_DB_FILE "CREATE TABLE IF NOT EXISTS ports (id INTEGER PRIMARY KEY,busport TEXT,UNIQUE (busport));"

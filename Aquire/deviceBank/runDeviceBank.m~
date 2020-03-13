@@ -1,0 +1,153 @@
+function [] = runDeviceBank(debug)
+    %%%%%%%%%%%%%%%%%%%%%%%%
+    % NOTE: there is a problem if the last code is scanned before all the 
+    % meta data tiles
+    % NOTE: the sample codes can be scanned out of order if there are more
+    % than 1
+    %%%%%%%%%%%%%%%%%%%%%%%%
+    initBase = ['imageStore' filesep];
+    folderString =[getenv('HOME') filesep initBase];
+    fileString = '';
+    
+    if nargin == 0;debug=false;end
+    %%%%%%%%%%%%%%%%%%%%%%%%
+    % init vars
+    % init the prompts
+    initPrompt = 'Please scan init command.\n';
+    samplePrompt = 'Please scan sample code #.\n';
+    metaPrompt = 'Please scan meta data tile number #.\n';
+    endPrompt = 'Please scan end command.\n';
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%
+    % scan until the start code 
+    % init the 
+    str = '';
+    flag = false;
+    %while ((~containsKeys(str,{'command','usbPort'})) || (~flag))
+    while ~containKVP(str,{'{command_sessionStart}','{usbPort_*'})
+        str = getValidRead(initPrompt);
+    end
+    %%%%%%%%%%%%%%%%%%%%%%%%
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%
+    % report the start code has been found
+    sampleCodeN = str2num(getValue(findKVP(str,'sampleSpecific')));
+    totalCodeN = str2num(getValue(findKVP(str,'sampleSpecific')));
+    usbPort = getValue(findKVP(str,'usbPort'));
+    deviceType = getValue(findKVP(str,'deviceType'));
+    fprintf(['Session started for ' deviceType '@' usbPort ' usbPort.\n']);
+    expectedTilesN = totalCodeN;
+    %%%%%%%%%%%%%%%%%%%%%%%%
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%
+    % scan sample codes
+    sampleCnt = 1;
+    sampleFileData = '';
+    fprintf(['Expecting ' num2str(sampleCodeN) ' sample QR codes.\n'])
+    while ((~containKVP(str,{'{dataType_sampleCode}'})) && (sampleCodeN ~= 0))
+        tmpPrompt = strrep(samplePrompt,'#',num2str(sampleCnt));
+        str = getValidRead(tmpPrompt);
+        if containKVP(str,{'{dataType_sampleCode}'})
+            % get file data from sample code
+            sampleFileData = getValue(findKVP(str,'fe'));
+            sampleCodeN = sampleCodeN - 1;
+        else
+            fprintf('Your command was not a valid sample QR.\n');
+        end
+    end
+    %%%%%%%%%%%%%%%%%%%%%%%%
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%
+    % scan meta data codes until the top is scanned
+    %%%%%%%%%%%%%%%%%%%%%%%%
+    str = '';
+    flag=false;
+    tileCount = 2;
+    metaTileCount = 0;
+    while (containKVP(str,{'{dataType_metaCode}'}) & (metaTileCount ~= expectedTilesN))
+        tmpPrompt = strrep(metaPrompt,'#',num2str(tileCount));
+        str = getValidRead(tmpPrompt);
+        if containKVP(str,{'{dataType_metaCode}'})
+            % get the folder values
+            folderData = getValue(findKVP(str,'fr'));
+            % get the file values
+            fileData = getValue(findKVP(str,'fe'));
+            % get the tile number
+            tileNumber = getValue(findKVP(str,'tileNumber'));
+            
+            
+            % if the wrong tile is scanned
+            if (tileCount ~= str2num(tileNumber))
+                fprintf(['****************************\n']);
+                fprintf(['ERROR: Tile was scanned out of order!\n'])
+                fprintf(['Please scan again.\n'])
+                fprintf(['****************************\n']);
+            else
+                % if the proper tile is scanned
+                folderString = [folderString folderData];
+                fileString = [fileString fileData];
+                % report if debug
+                if debug
+                    fprintf(['Folder:' folderString '\n']); 
+                    fprintf(['File:' fileString '\n']);
+                    fprintf(['Tile Count:' tileNumber '\n']);
+                end
+                tileCount = tileCount + 1;
+                metaTileCount = metaTileCount + 1;
+            end
+        else
+            str = '';
+            fprintf(['****************************\n']);
+            fprintf(['Scanner didn''t get a full read.\n']);
+            fprintf(['Please scan again.\n']);
+            fprintf(['****************************\n']);
+        end
+    end
+    
+    
+     
+    %%%%%%%%%%%%%%%%%%%%%%%%
+    % scan until the end code 
+    % init the 
+    str = '';
+    flag = false;
+    while ((~containsKeys(str,{'command'})) || (~flag))
+        str = input(endPrompt,'s');
+        if validPSON(str)
+            flag = strcmp(getValue(findKVP(str,'command')),'sessionStart');
+        else
+            str = '';
+            fprintf(['****************************\n']);
+            fprintf(['Scanner didn''t get a full read.\n']);
+            fprintf(['Please scan again.\n']);
+            fprintf(['****************************\n']);
+        end
+    end
+    %%%%%%%%%%%%%%%%%%%%%%%%
+    
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%
+    % attach the sample specific data
+    fileString = [fileString sampleFileData];
+    
+    
+    fprintf(['****************************\n']);
+    fprintf(['Starting data aquizition\n']);
+    fprintf(['****************************\n']);
+    fprintf(['Folder:' folderString '\n']); 
+    fprintf(['File:' fileString '\n']);
+    fprintf(['****************************\n']);
+    
+end
+
+
+
+
+
+
+
+
+
+
+
+

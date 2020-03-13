@@ -1,0 +1,4 @@
+#!/bin/bash
+cyverseUser=$1
+who=$(whoami)
+sudo mount -o gid=$who,$who -t davfs https://data.cyverse.org/dav/iplant/home/$cyverseUser/phytoMorphTK/objects $HOME/phytoMorphTK/objects

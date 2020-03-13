@@ -1,0 +1,29 @@
+#!/bin/bash
+
+echo "----------------------------------------"
+genType='computer'
+computerName='testComputer1'
+computerPointer=$(./genAPI "$genType" "$computerName")
+echo "computerPointer:"$computerPointer
+obj=$(./iprojectPtr "$computerPointer")
+echo "@ptr---->"
+echo $obj
+echo "<----@ptr"
+echo "----------------------------------------"
+
+genType='usbPort'
+portNumber=1
+hName='Grey worm'
+deviceType='scanner'
+portPointer=$(./genAPI "$genType" "$portNumber" "$hName" "$computerPointer" "$deviceType")
+echo "portPointer:"$portPointer
+
+
+genType='tileTrigger'
+title='Test Sequence 1'
+metaN=1
+sampleN=1
+triggerPointer=$(./genAPI "$genType" "$title" "$metaN" "$sampleN" "$portPointer")
+echo "seqPointer:"$triggerPointer
+
+

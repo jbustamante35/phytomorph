@@ -1,0 +1,39 @@
+#!/bin/bash
+#1 := program
+#2 := mode/type
+#3 := number
+#4 := file to stream
+programName=$1
+streamType=$2
+streamNumber=$3
+streamFile=$4
+
+filename="${streamFile##*/}"
+basename="${streamFile%$filename}"
+streamFile=$(find $(pwd -P) -type f -name "$filename")
+
+
+echo "################################"
+echo "starting file stream: $streamFile"
+echo "gathering stream information:"
+streamTarget=$(sqlite3 $PHYTOSTREAMS_DB_FILE "select target from streams WHERE program='$programName' AND active=1 AND number=$streamNumber AND mode='$streamType'";)
+streamSource=$(sqlite3 $PHYTOSTREAMS_DB_FILE "select source from streams WHERE program='$programName' AND active=1 AND number=$streamNumber AND mode='$streamType'";)
+extraPath=${streamFile#$streamSource}
+extraPath=${extraPath%$filename}
+echo "------------------------------"
+echo "fileName:"$filename
+echo "extraPath:$extraPath"
+echo "streamSource:$streamSource"
+echo "streamTarget:"$streamTarget$extraPath
+echo "pushing: $streamFile -->" $streamTarget
+echo "------------------------------"
+if [ "$streamType" = 'cyverseStream' ]
+then
+	./phytoCP cyverse $streamFile $streamTarget$extraPath $filename
+elif [ "$streamType" = 'cyverseBuffer' ] 
+then
+	./phytoCP local $streamFile $streamTarget$extraPath $filename
+	sqlite3 $PHYTOSTREAMS_DB_FILE "INSERT OR IGNORE INTO fileQueue (program,mode,number,file,isQueued) VALUES ('$programName','$streamType"_out"',$streamNumber,'$streamTarget$extraPath$filename',1);"
+fi
+echo "ended file stream."
+echo "################################"

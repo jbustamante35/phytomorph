@@ -1,0 +1,8 @@
+#!/bin/bash
+source=$1
+targetString=$2
+completeTarget=$(fileNameParse $source $targetString)
+#cp $source $completeTarget
+mv $source $completeTarget
+echo $source"-->"$completeTarget
+

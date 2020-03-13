@@ -1,0 +1,11 @@
+#!/bin/bash
+imageName=$1
+res=$2
+# query the width of the QR
+W=$(identify -ping -format '%w' $imageName)
+# query the height of the QR
+H=$(identify -ping -format '%h' $imageName)
+echo "Size:"$W"x"$H" pixels"
+inchW=$(expr $W/$res | bc -l)
+inchH=$(expr $H/$res | bc -l)
+echo "Size"$inchW"x"$inchH" inches"

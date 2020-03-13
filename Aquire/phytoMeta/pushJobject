@@ -1,0 +1,22 @@
+#!/bin/bash
+# object to push
+object=$1
+# project out the object ID
+id=$(./projectId "$object")
+# get the type
+type=$(echo "$id" | jq '.type')
+l=${#type}
+l=$((l-2))
+type=${type:1:$l}
+# use has of json string as object ID
+hash=$(echo -n $id | sha256sum)
+hash=$(echo "$hash" | cut -d' ' -f 1)
+prefix=${hash:0:2}
+# the PHYTO_OBJECTS is spec at install
+ofile=$PHYTO_OBJECTS$type'/'$prefix
+# make the directory
+mkdir -p "$ofile"
+# make the file name
+ofile="$ofile"'/'"$hash"
+# write to file
+echo "$object">"$ofile"

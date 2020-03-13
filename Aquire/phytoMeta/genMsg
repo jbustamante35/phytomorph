@@ -1,0 +1,11 @@
+#!/bin/bash
+from='"'$1'"'
+to='"'$2'"'
+type=$3
+body=$4
+pmd=$(<$PHYTO_DICT)
+type=$(echo -n $pmd | jq ".header.values.type.$type" | sed 's/"//g')
+msg=$(./genKVP '.header.keys.from' $from)
+msg=$(./genKVP '.header.keys.to' $to $msg)
+msg=$(./genKVP '.header.keys.type' $type $msg)
+echo $msg

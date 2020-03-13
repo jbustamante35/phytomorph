@@ -1,0 +1,9 @@
+#!/bin/bash
+# $1 := device number
+# $2 := resolution for scanning
+# $3 := path to image
+# $4 := file name for image without the .tif
+busport=$(getBusportFromID $1)
+busdev=$(formatBusPortForScanimage $busport)
+scanimage -d epson2:libusb:$busdev --resolution $2 --format tiff > $3$4.tif
+

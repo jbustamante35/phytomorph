@@ -1,0 +1,7 @@
+#!/bin/bash
+# zip up the phtyoPhoto folder, back up the old copy, and place the new copy for download
+D=$(date +"%S-%M-%H-%m-%d-%y")
+zip -r -j /mnt/scratch1/phytomorph_dev/Aquire/phyto$packageName.zip /mnt/scratch1/phytomorph_dev/Aquire/phyto$packageName
+imkdir -p /iplant/home/nmiller/publicData/phyto$packageName/
+imv /iplant/home/nmiller/publicData/phyto$packageName/phyto$packageName.zip /iplant/home/nmiller/publicData/phyto$packageName/phyto$packageName_$D.zip
+iput -f /mnt/scratch1/phytomorph_dev/Aquire/phyto$packageName.zip /iplant/home/nmiller/publicData/phyto$packageName/

@@ -1,0 +1,7 @@
+#!/bin/bash
+# $1 := filepath
+# $2 := filename
+busport=$(./getBusportFromID $1)
+busdev=$(./formatBusPortForScanimage $busport)
+scanimage -d epson2:libusb:$busdev --resolution $2 --format tiff > $3$4.tif
+

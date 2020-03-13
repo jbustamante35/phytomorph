@@ -1,0 +1,174 @@
+#!/bin/bash
+# This is an infinte loop and crtl-c will get you out
+# 
+####################################################
+# reset any strange camera connections
+echo -e "#################################################"
+killall PTPCamera
+# get the date
+MDY=$(date +%m_%d_%Y)
+# this is the name of the imaging station - green 
+echo -n -e "Please enter the name of the imaging station."
+read compName
+echo -e "#################################################"
+
+mkdir -p ~/lightbox/$MDY"_images"/
+
+inputfile="/phytomorph/simpleDatabaseFields.csv"
+#OLDIFS="$IFS"
+#IFS=","
+cnt=1;
+GENO="GENO"
+REP="REP"
+echo -e "#################################################"
+echo -n -e "Plese select a database field list.\n"
+while read VALUES ; do
+    eval "G[$cnt]=$VALUES"
+    echo "["$cnt"]-->GENO,REP,"${G[$cnt]}
+    (( cnt++ ))
+done < "$inputfile"
+#IFS="$OLDIFS"
+read selection
+echo -e "#################################################"
+
+
+
+
+
+
+#compName='green'
+# on boot-up of the script - this is for 
+# Only create the daily pheno file if it does not already exist
+# phenotype file is for manual measurements.
+# the default is to read in:
+# geno = genotype
+# rep = replicate
+# time = time
+# TL = tassel Length
+# SL = spike length
+# BN = branch number
+# notes = notes field
+if [ ! -f ./pheno_"$MDY"_"$compName".csv ]; then
+    #echo 'geno, rep, time, TL, SL, BN, notes' > pheno_"$MDY"_"$compName".csv
+    echo "GENO,REP,"${G[$selection]} > pheno_"$MDY"_"$compName".csv
+fi
+####################################################
+
+
+####################################################
+# set some coloring in the terminal
+#red='\e[0;31m'
+#white='\e[1;37m'
+#gray='\e[1;30m'
+echo -n -e "Do you want live streaming(y/n)?:"
+read streaming
+
+
+
+
+
+if [ "$streaming" = "y" ]
+then
+    icd
+    ihome=$(ipwd)
+    streamTarget=$ihome'/lightbox/'$compName/$MDY'_images'
+    echo $streamTarget
+    createStreamsDB
+    createStream lightbox normal 1 1 $streamTarget
+    imkdir -p $streamTarget
+fi
+
+
+####################################################
+echo -n -e "Do you want a background image(y/n)?:"
+read doBackground
+####################################################
+####################################################
+echo -n -e "How many technical reps per bio rep?:"
+read total_tech_reps
+####################################################
+# start with first rep
+#total_reps=2
+rep=1
+stuck=1
+# remove variable holds a word that you can type to delete previous records
+remove="remove"
+
+
+while (($stuck==1))
+do
+  ####################################################
+  # prompt for the name of the genotype - scanning row tags or type with keyboard
+  echo -n -e "(Press Ctl-C to quit) GENOTYPE?:"
+  # read the genotype  
+  read geno
+  ####################################################
+
+
+  ####################################################
+  # start at rep 1
+  rep=1
+  # prompt for the number of reps
+  echo -n -e "Number Biological of Reps?"
+  # read the number of reps
+  read total_reps
+  ####################################################
+
+  ####################################################
+  # loop for each rep
+  while (($rep <= $total_reps))
+  do
+
+     
+      
+    # grab the time
+    HMS=$(date +%H.%M.%S)
+    file_name=${geno}_rep${rep}_${MDY}_${HMS}_${compName}
+
+    if [ "$doBackground" = "y" ]
+    then
+       # Capture background Image
+       echo -e "\n\nPress enter to take BACKGROUND image${gray}"
+       read junk
+       gphoto2 --camera "USB PTP Class Camera" --quiet --capture-image-and-download --filename ~/lightbox/${MDY}_images/${file_name}_background.%C
+       fileName=$(ls ~/lightbox/${MDY}_images/${file_name}_background*)
+       if  [ "$streaming" = "y" ]
+       then
+	   streamFile lightbox 1 normal $fileName
+       fi
+       #dcraw -e ./${MDY}_images/${file_name}_background.NEF
+     fi
+
+    techRep=1
+    while (($techRep <= $total_tech_reps))
+	  do  
+	      # Capture image with Tassel
+	      echo -e "Press enter when BIOREP $rep TECHREP $techRep is in place!"
+	      read junk
+	      #gphoto2 --camera "USB PTP Class Camera" --quiet --capture-image-and-download --filename ./"$MDY"_images/${file_name}.%C --hook-script view.sh
+	      gphoto2 --camera "USB PTP Class Camera" --quiet --capture-image-and-download --filename ~/lightbox/${MDY}_images/${file_name}_techRep_${techRep}.%C
+	      #dcraw -e ./"$MDY"_images/${file_name}.NEF
+	      fileName=$(ls ~/lightbox/"$MDY"_images/${file_name}_"techRep"_${techRep}.*)
+	      if  [ "$streaming" = "y" ]
+	      then
+		  streamFile lightbox 1 normal $fileName
+	      fi
+	      (( techRep++ ))
+    done
+
+    phenos=$geno,$rep
+    cnt=1
+    for i in $(echo ${G[$selection]} | sed "s/,/ /g")
+    do
+	echo -n -e "REP: $rep $i? "
+	read data
+	phenos=$phenos,$data
+	(( cnt++ ))
+    done
+    echo "$phenos" >> ~/$MDY_images/pheno_"$MDY"_"$compName".csv
+
+    (( rep++ ))
+
+  done
+  
+done

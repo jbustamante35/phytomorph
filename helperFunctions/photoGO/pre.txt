@@ -1,0 +1,8 @@
+T:  Bus=01 Lev=00 Prnt=00 Port=00 Cnt=00 Dev#=  1 Spd=480 MxCh= 2
+T:  Bus=01 Lev=01 Prnt=01 Port=00 Cnt=01 Dev#=  2 Spd=480 MxCh= 6
+T:  Bus=02 Lev=00 Prnt=00 Port=00 Cnt=00 Dev#=  1 Spd=480 MxCh= 2
+T:  Bus=02 Lev=01 Prnt=01 Port=00 Cnt=01 Dev#=  2 Spd=480 MxCh= 8
+T:  Bus=02 Lev=02 Prnt=02 Port=01 Cnt=01 Dev#=  3 Spd=480 MxCh= 0
+T:  Bus=02 Lev=02 Prnt=02 Port=02 Cnt=02 Dev#= 11 Spd=1.5 MxCh= 0
+T:  Bus=02 Lev=02 Prnt=02 Port=03 Cnt=03 Dev#=  5 Spd=1.5 MxCh= 0
+T:  Bus=02 Lev=02 Prnt=02 Port=06 Cnt=04 Dev#= 15 Spd=480 MxCh= 0

@@ -1,0 +1,22 @@
+#!/bin/bash
+# 19_12_16 - This command will take a user through the process of setting up scaners by 
+# prompting the user to plug in and hit key.  The method uses a diff command between the
+# outputs of usb-devices command written to file.
+# commented out below line > 19_12_16
+#lsusb | sed -e 's/Bus \([0-9]\+\) Device \([0-9]\+\).*/\1:\2/g' > pre.txt
+# write out the report from usb-devices
+usb-devices | grep T: > pre.txt
+# prompt the user
+echo 'Please plug in new device, wait 3 seconds and hit enter.'
+# gather the user input
+read input
+# commented out below line > 19_12_16
+#lsusb | sed -e 's/Bus \([0-9]\+\) Device \([0-9]\+\).*/\1:\2/g' > post.txt
+# write out new device data + old device data
+usb-devices | grep T: > post.txt
+# get the new device information
+newID=$(grep -vxFf pre.txt post.txt)
+port=$(echo $newID | cut -d: -f2 | cut -d ' '  -f5 | cut -d= -f2)
+bus=$(echo $newID | cut -d: -f2 | cut -d ' '  -f2 | cut -d= -f2)
+busport=$(echo $bus:$port)
+echo $busport > tmpNewPort

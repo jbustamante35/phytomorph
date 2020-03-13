@@ -1,0 +1,35 @@
+#!/bin/sh
+
+echo "Please select one."
+echo "[0] Initialize data connection to CyVerse."
+echo "[1] phytoMorph Image Phenomics ToolKit"
+echo "[2] GRAIN - GRass Architecture ImagiNg"
+echo "[3] SWELL - Scanners for swelling"
+echo "[4] Lightbox - Image Capture" 
+echo "[5] Change CyVerse User"
+echo "[6] Update"
+
+read selection
+case $selection in
+	0)
+		iinit
+		;;
+	1)
+		/phytomorph/phytoMorph_Suite_GUI
+		;;
+	2)
+		;;
+		
+	3)
+		;;
+	4)
+		lightbox
+		;;
+	5)
+		rm ~/.irods/irods_environment.json
+		iinit
+		;;
+	*)
+		echo "Invalid selection"
+		;;
+esac

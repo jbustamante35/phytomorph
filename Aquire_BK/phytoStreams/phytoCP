@@ -1,0 +1,27 @@
+#!/bin/bash
+# 1:= type
+# 2:= source file
+# 3:= target location
+# 4:= target file
+type=$1
+sourceFile=$2
+targetLocation=$3
+targetFile=$4
+targetFullFile=$targetLocation$targetFile
+echo "#############################################"
+echo "phytocopy with copyType:"$type
+echo "------------------------------"
+echo "sourceFile:"$sourceFile
+echo "targetLocation:"$targetLocation
+echo "fullFilePath:"$targetFullFile
+echo "------------------------------"
+if [ "$type" = 'cyverse' ]
+then
+	imkdir -p $targetLocation
+	iput -f $sourceFile $targetFullFile
+elif [ "$type" = 'local' ] 
+then
+	mkdir -p $targetLocation
+	cp $sourceFile $targetFullFile
+fi
+echo "#############################################"

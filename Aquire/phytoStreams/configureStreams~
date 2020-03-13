@@ -1,0 +1,17 @@
+#!/bin/bash
+# last edited: Jan 6, 2020
+# this is the location of the files to buffer - as of Jan 6, 2020
+# 	I am not sure if the buffers are fully tested
+# configure the location of the stream buffers
+PHYTOSTREAMS_BASE_BUFFER=~/phytoMorphTK/streamsBuffer/
+export PHYTOSTREAMS_BASE_BUFFER
+# export the location of the phytoStreams for future
+echo 'export PHYTOSTREAMS_BASE_BUFFER=~/phytoMorphTK/streamsBuffer/     #phytomorph' >> ~/.bashrc
+echo 'PHYTOSTREAMS_BASE_BUFFER=~/phytoMorphTK/streamsBuffer/' > ~/phytoMorphTK/tmpFiles/envVar
+
+# export the location of the phytoStreams database
+PHYTOSTREAMS_DB_FILE=~/phytoMorphTK/dataBaseFiles/dataStreams.db
+export PHYTOSTREAMS_DB_FILE
+echo 'PHYTOSTREAMS_DB_FILE=~/phytoMorphTK/dataBaseFiles/dataStreams.db' >> ~/phytoMorphTK/tmpFiles/envVar
+# export the location of the phytoStreams for future 
+echo 'export PHYTOSTREAMS_DB_FILE=~/phytoMorphTK/dataBaseFiles/dataStreams.db      #phytomorph' >> ~/.bashrc

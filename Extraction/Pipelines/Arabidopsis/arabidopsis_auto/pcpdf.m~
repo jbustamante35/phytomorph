@@ -1,0 +1,4 @@
+function [p] = pcpdf(PC,P)
+    PC = bsxfun(@minus,PC,P);
+    p = normpdf(PC,0,100);
+end

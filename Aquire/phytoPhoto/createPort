@@ -1,0 +1,7 @@
+#!/bin/bash
+# last edited Jan, 02 2020
+# needs sqlite3 and env var of phytoports assigned to the database location
+sqlite3 $PHYTOPORTS_DB_FILE "INSERT OR IGNORE INTO ports (busport) VALUES ('$1');"
+id=$(sqlite3 $PHYTOPORTS_DB_FILE "SELECT id FROM ports WHERE busport='$1';")
+sqlite3 $PHYTOPORTS_DB_FILE "UPDATE ports SET busport='$1' WHERE id='$id';"
+
