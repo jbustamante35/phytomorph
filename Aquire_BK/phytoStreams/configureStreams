@@ -1,0 +1,12 @@
+#!/bin/bash
+
+# configure the location of the stream buffers
+export PHYTOSTREAMS_BASE_BUFFER=~/phytoMorphTK/streamsBuffer/
+# export the location of the phytoStreams for future
+echo 'export PHYTOSTREAMS_BASE_BUFFER=~/phytoMorphTK/streamsBuffer/' >> ~/.bashrc
+
+
+# export the location of the phytoStreams database
+export PHYTOSTREAMS_DB_FILE=~/phytoMorphTK/dataBaseFiles/dataStreams.db
+# export the location of the phytoStreams for future 
+echo 'export PHYTOSTREAMS_DB_FILE=~/phytoMorphTK/dataBaseFiles/dataStreams.db' >> ~/.bashrc

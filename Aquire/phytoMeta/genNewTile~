@@ -1,0 +1,33 @@
+#!/bin/bash
+#--------------------------------------------------
+# tile type
+tileType=$1
+# tile message target pointer - usbPort - usually
+ptrTarget=$2
+# message body pointer
+ptrBody=$3
+#--------------------------------------------------
+# tile message key
+msgKey = 'tileMessage'
+# create new object
+coreKVP=$(./genNewObject "tile$tileType")
+# create pointer for this - source
+ptrSource=$(./projectPtr $coreKVP)
+
+
+# create message
+#tileMessage=$(./genNewMessage "$ptrSource" "$msgTarget" "$ptrBody")
+tileMessage=$(./genAPI "$ptrSource" "$ptrTarget" "$ptrBody"
+
+
+keys[0]=$msgKey
+values[0]=$tileMessage
+# generate objects
+cnt=0
+for k in ${keys[@]}
+do
+	tmpKVP=$(jo "$k"="${values[$cnt]}")
+	coreKVP=$(./addKVP "$coreKVP" "$tmpKVP")
+	cnt=$((cnt + 1))
+done
+echo $coreKVP

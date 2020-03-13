@@ -1,0 +1,85 @@
+function [featureTable,imageStacks,structData] = projectCotFeatureVector(dataPoints)
+    featureList = {'holeN','branchPointsN','endPointsN',...
+                'topPointX','topPointY','botPointX','botPointY',...
+                'mainVeinLength','mainBranchPointsN','nonMainBranchPointsN'};
+    fillV = repmat({[]},[1 numel(featureList)]);
+    featureTable = table(fillV{:},'VariableNames',featureList);
+    holesStack = [];
+    for e = 1:numel(dataPoints)
+        % tmp var for point sets
+        pointSets = dataPoints(e).pointSets;
+
+        % bools for choices
+        branchPointsBool = ~isempty(pointSets.bPoints);
+        edgePointsBool = ~isempty(pointSets.ePoints);
+        skelPointsBool = ~isempty(pointSets.sPoints);
+
+        % network data for searching
+        Adj = dataPoints(e).Adj;
+
+        % find the top and bottom point
+        topPoint = findTopBranchPoint(Adj,pointSets,skelPointsBool,branchPointsBool,false);
+        botPoint = findBottomEndPoint(Adj,pointSets,skelPointsBool,edgePointsBool);
+
+
+        % trace the main vein
+        [mainVeinPath,mainVeinLength] = getMainVein(Adj,pointSets,botPoint,topPoint,skelPointsBool);
+
+
+
+
+        % store the top point
+        featureTable.topPointX(e) = topPoint(2);
+        featureTable.topPointY(e) = topPoint(1);
+        % store the bottom point
+        featureTable.botPointX(e) = botPoint(2);
+        featureTable.botPointY(e) = botPoint(1);
+        % store the main vein length
+        featureTable.mainVeinLength(e) = mainVeinLength;
+
+
+        % split the main vein branch points
+        if ~isempty(mainVeinPath)
+            % non-main branch points
+            nonMainBranchPoints = setdiff(pointSets.bPoints,mainVeinPath,'rows');
+            % main branch points
+            mainBranchPoints = setdiff(pointSets.bPoints,nonMainBranchPoints,'rows');
+            % main branch points - top abd bot
+            midMainBranchPoints = setdiff(mainBranchPoints,botPoint,'rows');
+            midMainBranchPoints = setdiff(midMainBranchPoints,topPoint,'rows');
+        end
+
+
+        bpCluster_func1(Adj,pointSets,21);
+
+        featureTable.holeN(e) = dataPoints(e).pointSets.numberHoles;
+        featureTable.branchPointsN(e) = size(dataPoints(e).pointSets.bPoints,1);
+        featureTable.endPointsN(e) = size(dataPoints(e).pointSets.bPoints,1);
+        featureTable.mainBranchPointsN(e) = size(mainBranchPoints,1);
+        featureTable.nonMainBranchPointsN(e) = size(nonMainBranchPoints,1);
+
+
+        holesStack(:,:,e) = dataPoints(e).holesImage;
+        R = regionprops(holesStack(:,:,e) > .8,'Area');
+        if ~isempty(R)
+            featureTable.averageArea(e) = mean([R.Area]);
+        else
+            featureTable.averageArea(e) = 0;
+        end
+           
+
+
+        
+        structData(e).sPoints = pointSets.sPoints';
+        structData(e).bPoints = pointSets.bPoints';
+        structData(e).ePoints = pointSets.ePoints';
+        structData(e).mainVeinPath = mainVeinPath;
+        structData(e).mainBranchPoints = mainBranchPoints';
+        structData(e).nonMainBranchPoints = nonMainBranchPoints';
+
+
+
+        fprintf(['Done with:' num2str(e) ':' num2str(numel(dataPoints)) '\n']);
+    end
+    imageStacks.holesStack = holesStack;
+end

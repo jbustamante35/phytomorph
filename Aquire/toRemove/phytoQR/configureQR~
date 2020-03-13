@@ -1,0 +1,10 @@
+#!/bin/bash
+# script was last edited on Jan, 03 2020
+# this script needs to be called before the createDB script 
+# this script is responsible for the system variable 
+# PHYTOPORTS_DB_FILE which holds the location of the database file
+# export the location of the phytoStreams database
+PHYTOPORTS_DB_FILE=~/phytoMorphTK/dataBaseFiles/dataPorts.db
+export PHYTOPORTS_DB_FILE
+# export the location of the phytoStreams for future 
+echo 'export PHYTOPORTS_DB_FILE=~/phytoMorphTK/dataBaseFiles/dataPorts.db' >> ~/.bashrc

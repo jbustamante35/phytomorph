@@ -1,0 +1,28 @@
+#!/bin/bash
+# $1 := device number
+# $2 := resolution for scanning
+# $3 := path to image
+# $4 := file name for image without the .tif
+# $5 := if called from loop this var is the counter
+if [ "$#" -eq "5" ]
+	countVar=$5
+else
+	countVar='NA'
+fi
+# script was last edited on Jan 03,2020 - todo: add color mode -mode Gray|Color..etc
+# added file mover on Jan, 17 2020
+# make tmp file
+tmpFile=$(mktemp)
+# lock port
+lockPort $1
+# get the bus port from the SQLite database
+busport=$(getBusportFromID $1)
+# format for image scan
+busdev=$(formatBusPortForScanimage $busport)
+# collect data
+#scanimage -d epson2:libusb:$busdev --resolution $2 --format tiff > $3$4.tif
+scanimage -d epson2:libusb:$busdev --resolution $2 --format tiff > $tmpFile.tif
+fileMover $tmpFile $3$4 $countVar
+# unlock port
+unlockPort $1
+

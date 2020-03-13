@@ -1,0 +1,59 @@
+clear all
+clear classes
+close all
+%%
+close all
+X = randi([-50 50],[1000 1]);
+Y = randi([-50 50],[1000 1]);
+
+G = phG([X Y]);
+% take top N points from table and add as nodes
+N = 100;
+for e = 1:N
+    n = phN(e);
+    G.addNode(n);
+end
+G.displayNodes();
+%{
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+% add random single edges
+% take random M from N
+M = 20;
+for e = 1:M
+    i1 = randi(N,1);
+    i2 = randi(N,1);
+    ed = phE([i1 i2]);
+    G.addEdge(ed);
+end
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+%}
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+% add edges of length pl
+P = 5;
+for pl = 3:5
+    % create a random number of paths of length pl
+    numPaths = randi(P,1);
+    numPaths = 1;
+    for n = 1:numPaths
+        % select start point from N points
+        p1 = randi(N,1);
+        
+        % make a chain of length pl
+        for e = 1:pl
+            % select send point
+            p2 = randi(N,1);
+            ed = phE([p1 p2]);
+            G.addEdge(ed);
+            % make end point the next start point
+            p1 = p2;
+        end
+    end
+end
+G.displayEdges();
+G.displayEndPoints();
+
+fidx = findnEndPoints(G);
+
+startPoint = sparse(
+
+

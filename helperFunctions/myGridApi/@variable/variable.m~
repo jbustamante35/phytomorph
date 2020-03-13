@@ -1,0 +1,11 @@
+classdef variable < handle
+    
+    properties
+    end
+    
+    methods
+        function [obj] = variable(db,value)
+        
+        end
+    end
+end

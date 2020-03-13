@@ -1,0 +1,12 @@
+#!/bin/bash
+#lsusb | sed -e 's/Bus \([0-9]\+\) Device \([0-9]\+\).*/\1:\2/g' > pre.txt
+usb-devices | grep T: > pre.txt
+echo 'Please plug in new device, wait 3 seconds and hit enter.'
+read input
+#lsusb | sed -e 's/Bus \([0-9]\+\) Device \([0-9]\+\).*/\1:\2/g' > post.txt
+usb-devices | grep T: > post.txt
+newID=$(grep -vxFf pre.txt post.txt)
+port=$(echo $newID | cut -d: -f2 | cut -d ' '  -f5 | cut -d= -f2)
+bus=$(echo $newID | cut -d: -f2 | cut -d ' '  -f2 | cut -d= -f2)
+busport=$(echo $bus:$port)
+echo $busport > tmpNewPort

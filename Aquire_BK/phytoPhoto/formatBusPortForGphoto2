@@ -1,0 +1,4 @@
+#!/bin/bash
+dev=$(./usb_port_2_device $1)
+bus=$(echo $1 | cut -d: -f1)
+echo $bus,$dev

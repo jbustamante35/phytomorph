@@ -1,0 +1,111 @@
+#!/bin/bash
+# source file to move
+sourceFile=$1
+# target file name to parse
+targetFileName=$2
+# count var
+if [ "$#" -eq "3" ]
+then
+ 	countVar=$3
+else
+ 	countVar="NA"
+fi
+
+# commented out 0- was used for pipes
+#read targetFileName
+
+# character count for target
+N=${#targetFileName}
+
+# remove the } char - assume this is the number of keys?
+#G=${targetFileName//\}/}
+#G=${#G}
+#nd=$(($N-$G))
+
+nd=$(./kvpCount $targetFileName)
+
+dateSep='~'
+nfileNameString=''
+for kv in $(seq 1 1 $nd)
+do
+	i=$(($kv-1))
+	#echo $i
+	#echo $targetFileName
+	# get the key-value-pair by index
+	kvp=$(./kvpIndex $i $targetFileName)
+	# old way removed on Jan 17, 2020
+	#kvp=$(echo $targetFileName | cut -d} -f $kv | cut -d{ -f 2)
+	# old way for key and value removed on Jan 17, 2020
+	#v=$(echo $kvp | cut -d_ -f 2)
+	#k=$(echo $kvp | cut -d_ -f 1)
+	
+	# get the key value pairs
+	v=$(./getValue $kvp)
+	k=$(./getKey $kvp)
+
+	#echo "KVP:" $kvp
+	#echo "KVP-K:" $k
+	#echo "KVP-V:" $v
+
+	#echo "currentPair: "$kvp
+	firstletter=${v:0:1}
+
+	#echo "FL:" $firstletter
+	if [ "$firstletter" = "$" ]
+	then
+
+		cmdType=$(echo $v | cut -d, -f1)
+		cmdType=${cmdType:1}
+		#echo "CMD:" $cmdType
+
+
+		case $cmdType in
+		date)
+			cmd=${v//,/\'_\'%}
+			cmd=$(echo $cmd | sed 's/'\''_'\''/\ +/')
+			cmd=$(echo $cmd | sed 's/$date//')
+			cmd=${cmd//$/}
+			cmd='date '$cmd
+			v=$(eval $cmd)
+			v=${v//_/$dateSep}
+			nfileNameString=$nfileNameString'{'$k'_'$v'}'
+		;;
+		dvc-m)
+			v=$(./genHash md5 $sourceFile)
+			k="dvc"
+			nfileNameString=$nfileNameString'{'$k'_m-'$v'}'
+		;;
+		dvc-s)
+			v=$(./genHash sha256 $sourceFile)
+			k="dvc"
+			nfileNameString=$nfileNameString'{'$k'_s-'$v'}'
+		;;
+		mvc-m)
+			v=$(./genHash s-md5 $nfileNameString)
+			k="mvc"
+			nfileNameString=$nfileNameString'{'$k'_m-'$v'}'
+		;;
+		mvc-s)
+			v=$(./genHash s-sha256 $nfileNameString)
+			k="mvc"
+			nfileNameString=$nfileNameString'{'$k'_s-'$v'}'
+		;;
+		uuid-r)
+			v=$(uuidgen)
+			k="uuid"
+			nfileNameString=$nfileNameString'{'$k'_'$v'}'
+		;;
+		iCount)
+			v=$countVar
+			k="index"
+			nfileNameString=$nfileNameString'{'$k'_'$v'}'
+		;;
+		esac
+	else
+		# reattach the kvp
+		nfileNameString=$nfileNameString$kvp
+	fi
+
+
+done
+echo $nfileNameString

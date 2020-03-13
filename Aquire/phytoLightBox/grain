@@ -1,0 +1,19 @@
+#!/bin/sh
+
+echo "Please select one."
+echo "[0] View configuration settings."
+echo "[1] Edit configuration settings."
+echo "[2] Take image."
+echo "[3] Return to Main Menu"
+
+read selection
+case $selection in
+        0)
+                iinit
+                ;;
+        1)
+                /phytomorph/phytoMorph_Suite_GUI
+                ;;
+        2)
+                ;;
+

@@ -1,0 +1,17 @@
+#!/bin/bash
+from=$1
+to=$2
+body=$3
+fromKey='from'
+toKey='to'
+bodyKey='body'
+# create new object
+coreKVP=$(./genNewObject 'message')
+# create from json
+from=$(jo $fromKey="$from")
+to=$(jo $toKey="$to")
+body=$(jo $bodyKey="$body")
+message=$(./addKVP "$coreKVP" "$from")
+message=$(./addKVP "$message" "$to")
+message=$(./addKVP "$message" "$body")
+echo $message

@@ -1,0 +1,37 @@
+#!/bin/bash
+cmd="$1"
+obj="$2"
+field="$3"
+element="$4"
+
+# get the list
+array=$(echo "$obj" | jq --arg f "$field" '.[$f]')
+
+case "$cmd" in
+	append)
+		# add to list
+		array=$(./addELE "$array" "[$element]")
+	;;
+	remove)
+		# subtract from list
+		array=$(subELE "$array" "[$element]")
+	;;
+	replace)
+		
+		replaceWithE="$5"
+		array=$(echo "$array" | jq --argjson q "$element" --argjson n "$replaceWithE" '[.[] | if .=$q then $n else $q end]')
+	;;
+	search)
+		# echo the object
+		#echo "$obj"
+
+		J=$(echo "$array" | jq --arg q "$3"  '.[] | select(.=$q)')
+		echo "$J"
+		#echo ''.'$field'"'"'
+	;;
+esac
+# re-attach list
+obj=$(echo "$obj" | jq --argjson toAttach "$array" --arg f "$field" '.[$f]=$toAttach')
+# save the mod object
+./pushJobject "$obj"
+echo $obj

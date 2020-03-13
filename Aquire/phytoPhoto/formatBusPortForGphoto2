@@ -1,0 +1,8 @@
+#!/bin/bash
+# last edited on Jan, 02 2020 - mod the call to usb_port_2_device to not have ./ as 
+# relative pathing
+# # last edited on Jan, 02 2020
+# configures port for gphoto2 format
+dev=$(usb_port_2_device $1)
+bus=$(echo $1 | cut -d: -f1)
+echo $bus,$dev

@@ -1,0 +1,10 @@
+q = parallel.pool.DataQueue;
+W = 4;
+pauseAmount = [5,1,1,1];
+cmdValue = [1 0 0 0];
+
+afterEach(q,@(X)fprintf(X));
+
+parfor e = 1:W
+    cmdTester(q,cmdValue(e),pauseAmount(e))
+end

@@ -1,0 +1,28 @@
+#!/bin/bash
+echo "Port Menu."
+echo "Please select one."
+echo "[0] Add Port to bank."
+echo "[1] Remove Port from bank."
+echo "[2] Test Port bank."
+echo "[3] Quit."
+read selection
+case $selection in
+	0)
+		./addPort
+		./portBankMenu
+		;;
+	1)
+		./removePorts
+		./portBankMenu
+		;;
+	2)
+		./checkPorts
+		./portBankMenu
+		;;
+	3)
+		;;
+
+	*)
+		echo "Invalid selection"
+		;;
+esac

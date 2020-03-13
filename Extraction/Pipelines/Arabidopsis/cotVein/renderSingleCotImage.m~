@@ -1,0 +1,161 @@
+function [] = renderSingleCotImage(dataPoint,toPath)
+    try
+    
+      
+
+        for e = 1:numel(dataPoint)
+            figure;
+
+            pointSets = dataPoint(e).veinNetwork;
+            image = dataPoint(e).alignedImage;
+            mask = dataPoint(e).alignedMask;
+
+            Adj = pointSets.Adj;
+
+            oRGB = cat(3,image,image,image);
+            modelMask = cat(3,mask,mask,mask);
+            rgbC = dataPoint(e).labelImage;
+
+            imshow([oRGB modelMask rgbC oRGB],[],'Border','tight');
+            hold on
+
+            branchPointsBool = ~isempty(pointSets.bPoints);
+            edgePointsBool = ~isempty(pointSets.ePoints);
+            skelPointsBool = ~isempty(pointSets.sPoints);
+
+
+            offset = size(oRGB,2);
+
+            if skelPointsBool
+                plot(pointSets.sPoints(:,2),pointSets.sPoints(:,1),'g.','MarkerSize',3)
+                plot(pointSets.sPoints(:,2)+offset,pointSets.sPoints(:,1),'g.','MarkerSize',3)
+            end
+            if branchPointsBool
+                plot(pointSets.bPoints(:,2),pointSets.bPoints(:,1),'ko','MarkerSize',6,'MarkerFaceColor','r','LineWidth',2)
+                plot(pointSets.bPoints(:,2)+offset,pointSets.bPoints(:,1),'ko','MarkerSize',6,'MarkerFaceColor','r','LineWidth',2)
+            end
+            if edgePointsBool
+                plot(pointSets.ePoints(:,2),pointSets.ePoints(:,1),'ko','MarkerSize',6,'MarkerFaceColor','b','LineWidth',2)
+                plot(pointSets.ePoints(:,2)+offset,pointSets.ePoints(:,1),'ko','MarkerSize',6,'MarkerFaceColor','b','LineWidth',2)
+            end
+
+            
+
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            % find the top skeleton xor branch point
+            if skelPointsBool
+                topPoint = dataPoint.veinNetwork.topPoint;
+                plot(topPoint(2),topPoint(1),'ko','MarkerSize',14,'MarkerFaceColor','y','LineWidth',2)
+                plot(topPoint(2)+offset,topPoint(1),'ko','MarkerSize',14,'MarkerFaceColor','y','LineWidth',2)
+               
+                %{
+                topThresh = 50;
+                [~,topIdx] = min(pointSets.sPoints(:,1));
+                if branchPointsBool
+                    source = pointSets.sPoints(topIdx,:);
+                    target = pointSets.bPoints;
+                    [tmpPath,tmpCost] = searchAlongNetwork(Adj,pointSets.sPoints,target,source);
+                    [minCost,minIdx] = min(tmpCost);
+                    if minCost < topThresh
+                        topIdx = minIdx;
+                        topPoint = pointSets.bPoints(topIdx,:);
+                        topIdx = find(all(bsxfun(@eq,pointSets.sPoints,topPoint) == 1,2));
+                    end
+                    plot(pointSets.sPoints(topIdx,2),pointSets.sPoints(topIdx,1),'ko','MarkerSize',14,'MarkerFaceColor','y','LineWidth',2)
+                end
+                %}
+            end
+
+
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            if skelPointsBool
+                botPoint = dataPoint.veinNetwork.botPoint;
+                plot(botPoint(2),botPoint(1),'ko','MarkerSize',14,'MarkerFaceColor','k','LineWidth',2);
+                plot(botPoint(2)+offset,botPoint(1),'ko','MarkerSize',14,'MarkerFaceColor','k','LineWidth',2);
+               
+
+                %{
+                % find the bottom endpoint
+                if ~edgePointsBool
+                    [~,botIdx] = max(pointSets.sPoints(:,1));
+                    source = pointSets.sPoints(botIdx,:);
+                else   
+                    [~,botIdx] = max(pointSets.ePoints(:,1));
+                    source = pointSets.ePoints(botIdx,:);
+                    [botIdx] = findInNetwork(pointSets.sPoints,source);
+                    source = pointSets.sPoints(botIdx,:);
+                end
+                % find the stem if can
+                if branchPointsBool
+                    [tmpPath,tmpPathcost] = searchAlongNetwork(Adj,pointSets.sPoints,pointSets.bPoints,source);
+                    [~,midx] = min(tmpPathcost);
+                    maPath = pointSets.sPoints(tmpPath{midx},:);
+                    plot(maPath(:,2),maPath(:,1),'r.','MarkerSize',3);
+                end
+                plot(pointSets.sPoints(botIdx,2),pointSets.sPoints(botIdx,1),'ko','MarkerSize',14,'MarkerFaceColor','k','LineWidth',2);
+                %}
+            end
+          
+
+           
+
+            % end points and bottom point
+            if skelPointsBool
+                botPoint = dataPoint.veinNetwork.botPoint;
+                plot(botPoint(2),botPoint(1),'ko','MarkerSize',6,'MarkerFaceColor','k','LineWidth',2);
+                plot(botPoint(2)+offset,botPoint(1),'ko','MarkerSize',6,'MarkerFaceColor','k','LineWidth',2);
+            
+                plot(pointSets.ePoints(:,2),pointSets.ePoints(:,1),'ko','MarkerSize',6,'MarkerFaceColor','b','LineWidth',2)
+                plot(pointSets.ePoints(:,2)+offset,pointSets.ePoints(:,1),'ko','MarkerSize',6,'MarkerFaceColor','b','LineWidth',2)
+           
+
+                %plot(pointSets.sPoints(botIdx,2),pointSets.sPoints(botIdx,1),'ko','MarkerSize',6,'MarkerFaceColor','k','LineWidth',2);
+            end
+
+            % find main vein branch points
+            if branchPointsBool
+                mainVeinBranchPoints = dataPoint.veinNetwork.mainBranchPoints;
+                %mainVeinBranchPoints = intersect(pointSets.bPoints,maPath,'rows');
+                plot(mainVeinBranchPoints(:,2),mainVeinBranchPoints(:,1),'ko','MarkerSize',6,'MarkerFaceColor','m','LineWidth',2)
+                plot(mainVeinBranchPoints(:,2)+offset,mainVeinBranchPoints(:,1),'ko','MarkerSize',6,'MarkerFaceColor','m','LineWidth',2)
+           
+            end
+
+            if branchPointsBool
+                for b = 1:size(pointSets.bPoints,1)
+                    text(pointSets.bPoints(b,2)+20+offset,pointSets.bPoints(b,1),num2str(b),'BackgroundColor',[.5 0 0]);
+                    %textLocation = pointSets.bPoints(b,:) - 50;
+                    %tipLocation = pointSets.bPoints(b,:);
+                    %X = [textLocation(2) tipLocation(2)]/(size(modelMask,2)*3);
+                    %Y = [tipLocation(1) tipLocation(1)]/size(modelMask,1);
+                    %annotation('textarrow',X,Y,'String',num2str(b));
+                end
+            end
+
+            if edgePointsBool
+                for b = 1:size(pointSets.ePoints,1)
+                    text(pointSets.ePoints(b,2)+20+offset,pointSets.ePoints(b,1),num2str(b),'BackgroundColor','c');
+                end
+            end
+
+
+                
+            % draw branch regions
+            for r = 1:numel(dataPoint(e).veinNetwork.branchRegions)
+                dataPoint(e).veinNetwork.branchRegions(r).plot();
+            end
+            
+
+            drawnow
+            if ~isempty(toPath)
+                saveas(gca,[toPath 'cotN-' num2str(e) '.jpg']);
+            end
+            waitforbuttonpress
+            close all
+        end
+
+    catch ME
+        ME;
+    end
+
+end

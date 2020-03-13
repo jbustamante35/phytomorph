@@ -1,0 +1,18 @@
+#!/bin/bash
+
+seqTitle=$1
+numCapTiles=2
+numTotalTiles=$2
+numSMetaTiles=$3
+
+type=$1
+
+numMTkey=$(echo -n $pmd | jq ".objects.tileSequence.keys.numCapTiles" | sed 's/"//g')
+numSTkey=$(echo -n $pmd | jq ".objects.tileSequence.keys.numSampleTiles" | sed 's/"//g')
+numMTkey=$(echo -n $pmd | jq ".objects.tileSequence.keys.numMetaTiles" | sed 's/"//g')
+
+
+msg=$(./genKVP ".objects.keys.type" '"'$typeValue'"')
+msg=$(./genKVP ".objects.keys.uuid" '"'$uuidValue'"' $msg)
+msg=$(./genKVP ".objects.keys.generateDate" '"'$dateValue'"' $msg)
+

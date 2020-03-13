@@ -1,0 +1,2 @@
+#!/bin/bash
+sqlite3 ~/phytoMorph/dataBaseFiles/dataPorts.db ".separator ","" "select * from ports";

@@ -1,0 +1,6 @@
+#!/bin/bash
+IFS='
+'
+groupObject=$(jo $1)
+unset IFS
+echo $groupObject

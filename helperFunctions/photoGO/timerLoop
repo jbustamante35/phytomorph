@@ -1,0 +1,22 @@
+#!/bin/bash
+C=1
+N=$1
+(( N++ ))
+SLEEP=$2
+PROGRAM=$3
+shift 3
+while [ $C -lt $N ]
+do
+	CMD=$(echo $PROGRAM "$@" $C)
+	echo $CMD
+	START_TIME=$(date +%s%3N)
+	eval $CMD
+	E_TIME=$(expr $(date +%s%3N) - $START_TIME)
+	E_TIME=$(( $E_TIME / 1000 ))
+	echo "command took: $E_TIME (s)"
+	TMP_T=$(( $SLEEP - $E_TIME ))
+	echo "sleeping for: $TMP_T  (s) of requested: $SLEEP (s)"
+	sleep $TMP_T
+	(( C++ ))
+done
+

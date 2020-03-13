@@ -1,0 +1,194 @@
+#!/bin/bash
+# labelMenu ./test.csv 1.75 1 0 0 .25 .1 4 10 .375 .5
+
+csvFile=$1
+labelWidth=$2
+labelHeight=$3
+upperLeftX=$4
+upperLeftY=$5
+horSpace=$6
+vertSpace=$7
+numCol=$8
+numRow=$9
+outerHor=${10}
+outerVer=${11}
+
+
+# key used to encode values for folder routing
+folderKey='fr'
+# key used to encode values for file rounting
+fileKey='fe'
+
+dataTypeKey='dataType'
+dataTypeValue='metaCode'
+
+dvcKey='dvcKey'
+dvcType='$dvc-m,$'
+
+mvcKey='mvcKey'
+mvcType='$mvc-m,$'
+
+uuidKey='uuidKey'
+uuidType='$uuid-r,$'
+
+iCountKey='indexKey'
+iCountType='$iCount,$'
+
+sampleKey='sampleSpecific'
+deviceTypeKey='deviceType'
+totalTileNumberKey='totalTiles'
+devicePortKey='usbPort'
+versionkey='version'
+
+dvcKeyNum=3
+dvcValueNum=$((32+4)) # for md5
+#dvcValueNum=$((64+4)) # for sha256
+
+mvcKeyNum=3
+mvcValueNum=$((32+4)) # for md5
+#dvcValueNum=$((64+4)) # for sha256
+
+uuidKeyNum=4
+uuidValueNum=36
+
+# total file name charaters
+totalChar=256
+# delimiter count
+delCount=3
+# used file name charaters
+usedChar=0
+kvSep='_'
+
+# init Folder data
+folderData=''
+# init the file data
+fileData=''
+
+
+tileString=''
+
+# query for constant meta data
+echo "Do you want to attach key-value pairs to all labels? (y/n)"
+read addTile
+
+
+# add if needed
+while [ $addTile = y ]
+do
+	
+	metaDataChoice=0
+	while [[ $metaDataChoice -lt 1  ||  $metaDataChoice -gt 8 ]]
+	do
+		# query user for information
+		echo "Do you want to add file or folder meta data to the QR tile?"
+		echo "---------------------------------"
+		echo "[1] - folder - value string"
+		echo "[2] - folder - {key_value} string"
+		echo "---------------------------------"
+		echo "[3] - file   - {key_value} string"
+		echo "[4] - file   - data verification"
+		echo "[5] - file   - meta-data verification"
+		echo "[6] - file   - file verification"
+		echo "[7] - file   - uuid"
+		echo "[8] - file   - sequence index"
+		echo "---------------------------------"
+		read metaDataChoice
+	done
+
+
+	# switch on
+
+	case $metaDataChoice in
+		1)
+		echo "Please enter the folder meta data."
+		read metaData
+		folderData=$folderData$metaData'/'
+		echo $usedChar
+		;;
+		2)
+		echo "Please enter the folder meta_data key."
+		read metaDataKey
+		echo "Please enter the folder meta_data value."
+		read metaDataValue
+		folderData=$folderData'{'$metaDataKey$kvSep$metaDataValue'}/'
+		;;
+		3)
+		echo "Please enter the file meta_data key."
+		read metaDataKey
+		echo "Please enter the file meta_data value."
+		read metaDataValue
+		fileData=$fileData'{'$metaDataKey$kvSep$metaDataValue'}'
+		usedChar=$(($usedChar+$delCount+${#metaData}+${#metaDataValue}))
+		;;
+		4)
+		echo "Added data verification code to file name"
+		#fileData=$fileData'{'$fvcKey$kvSep$fvcType'}'
+		dataVerString='{'$dvcKey$kvSep$dvcType'}'
+		usedChar=$(($usedChar+$delCount+$dvcKeyNum+$dvcValueNum))
+		;;
+		5)
+		echo "Added meta-data verification code to file name"
+		#fileData=$fileData'{'$mvcKey$kvSep$mvcType'}'
+		metadataVerString='{'$mvcKey$kvSep$mvcType'}'
+		usedChar=$(($usedChar+$delCount+$mvcKeyNum+$mvcValueNum))
+		;;
+		6)
+		echo "Added data and meta-data verification code to file name"
+		#fileData=$fileData'{'$fvcKey$kvSep$fvcType'}'
+		#fileData=$fileData'{'$mvcKey$kvSep$mvcType'}'
+		dataVerString='{'$dvcKey$kvSep$dvcType'}'
+		metadataVerString='{'$mvcKey$kvSep$mvcType'}'
+		usedChar=$(($usedChar+$delCount+$mvcKeyNum+$mvcValueNum))
+		usedChar=$(($usedChar+$delCount+$dvcKeyNum+$dvcValueNum))
+		;;
+		7)
+		echo "Added uuid to file name"
+		#fileData=$fileData'{'$uuidKey$kvSep$uuidType'}'
+		uuidVerString='{'$uuidKey$kvSep$uuidType'}'
+		usedChar=$(($usedChar+$delCount+$uuidKeyNum+$uuidValueNum))
+		;;
+		8)
+		echo "Added file index field to file name"
+		#fileData=$fileData'{'$uuidKey$kvSep$uuidType'}'
+		indexString='{'$iCountKey$kvSep$iCountType'}'
+		usedChar=$(($usedChar+$delCount+$uuidKeyNum+$uuidValueNum))
+		;;
+	esac
+	remainingChar=$(($totalChar - $usedChar))
+	echo "Character count in file name:"
+	echo "Total: $totalChar Used: $usedChar Remaining: $remainingChar"
+	echo "Current folder data is:"
+	echo $baseFolder$folderData
+	echo "Current file data is:"
+	echo $fileData
+	echo "Do you want to add more meta-data to this tile? (y/n)"
+	read addTile
+done
+# build constant data
+fileData=$fileData$indexString$uuidVerString$dataVerString$metadataVerString
+
+# create folder data
+if [ "$folderData" != '' ]
+then
+	tileString=$tileString'{'$folderKey$kvSep$folderData'}'
+fi
+
+# create file data 
+if [ "$fileData" != '' ]
+then
+	tileString=$tileString'{'$fileKey$kvSep$fileData'}'
+fi
+
+
+labelWidth=$2
+labelHeight=$3
+upperLeftX=$4
+upperLeftY=$5
+horSpace=$6
+vertSpace=$7
+numCol=$8
+numRow=$9
+outerHor=${10}
+outerVer=${11}
+
+labelGenerator $csvFile $labelWidth $labelHeight $upperLeftX $upperLeftY $horSpace $vertSpace $numCol $numRow $outerHor $outerVer $tileString

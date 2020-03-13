@@ -1,0 +1,6 @@
+#!/bin/bash
+
+# export the location of the phytoStreams database
+export PHYTOSTREAMS_DB_FILE=~/phytoMorphTK/dataBaseFiles/dataPorts.db
+# export the location of the phytoStreams for future 
+echo 'export PHYTOSTREAMS_DB_FILE=~/phytoMorphTK/dataBaseFiles/dataPorts.db' >> ~/.bashrc

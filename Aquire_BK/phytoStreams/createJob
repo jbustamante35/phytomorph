@@ -1,0 +1,19 @@
+#!/bin/bash
+# 1:= programName
+# 2:= file
+# 3:= isQueued
+programName=$1;
+file=$2
+# search for job in queue
+isQueued=$(sqlite3 $PHYTOSTREAMS_DB_FILE "SELECT isQueued FROM jobQueue WHERE program='$programName' AND file='$file'";)
+if [ "$isQueued" = "" ]
+# if the job is not in queue
+then
+	echo "Placeing job in queue."
+	echo "Job:"$programName "-->" $file "."
+	sqlite3 $PHYTOSTREAMS_DB_FILE "INSERT OR IGNORE INTO jobQueue (program,file,isQueued) VALUES ('$programName','$file',1);"
+elif [ "$isQueued" -eq "1" ]
+# job is already in queue
+then
+	echo 'Job has already queued.'
+fi

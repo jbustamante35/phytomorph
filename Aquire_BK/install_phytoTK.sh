@@ -1,0 +1,100 @@
+#!/bin/bash
+case $1 in
+	phytoPhoto)
+		echo "**************************************"
+		echo "Installing phytoPhoto"
+		echo "**************************************"
+		# make the directory for phytoStreams
+		mkdir -p ~/phytoMorphTK/phytoPhoto/
+		# make the directory for the install file
+		mkdir -p ~/phytoMorphTK/installFiles/
+		# make the directory for the databases(s)
+		mkdir -p ~/phytoMorphTK/dataBaseFiles/
+		# get the current zip containing the phytoStreams toolkit
+		wget -c -O ~/phytoMorphTK/installFiles/phytoPhoto.zip https://de.cyverse.org/dl/d/1502A202-DA42-404A-A6D5-E2B48482EACA/phytoPhoto.zip
+		# unzip the phytoStreams toolkit
+		unzip ~/phytoMorphTK/installFiles/phytoPhoto.zip -d ~/phytoMorphTK/phytoPhoto/
+		# export the current path for this install
+		export PATH=~/phytoMorphTK/phytoPhoto/:$PATH
+		# export future shells to include the phytoStreams toolkit
+		echo 'export PATH=~/phytoMorphTK/phytoPhoto/:$PATH' >> ~/.bashrc
+		configurePhoto
+		# call create streams
+		createStreamsDB
+		echo "******
+********************************"
+		echo "**************************************"
+		;;
+	phytoStreams)
+		echo "**************************************"
+		echo "Installing phytoStreams"
+		echo "**************************************"
+		# make the directory for phytoStreams
+		mkdir -p ~/phytoMorphTK/phytoStreams/
+		# make the directory for the install file
+		mkdir -p ~/phytoMorphTK/installFiles/
+		# make the directory for the databases(s)
+		mkdir -p ~/phytoMorphTK/dataBaseFiles/
+		# get the current zip containing the phytoStreams toolkit
+		wget -c -O ~/phytoMorphTK/installFiles/phytoStreams.zip https://de.cyverse.org/dl/d/42612F3A-9140-4753-91E7-924D0A220A0E/phytoStreams.zip
+		# unzip the phytoStreams toolkit
+		unzip ~/phytoMorphTK/installFiles/phytoStreams.zip -d ~/phytoMorphTK/phytoStreams/
+		# export the current path for this install
+		export PATH=~/phytoMorphTK/phytoStreams/:$PATH
+		# export future shells to include the phytoStreams toolkit
+		echo 'export PATH=~/phytoMorphTK/phytoStreams/:$PATH' >> ~/.bashrc
+		configureStreams		
+		# call create streams
+		createStreamsDB
+		echo "******
+********************************"
+		echo "**************************************"
+		;;
+	icommands)
+		echo "**************************************"
+		echo "Installing icommands"
+		echo "**************************************"
+		# download the icommands DEB package
+		wget -O ~/irods_install.deb https://files.renci.org/pub/irods/releases/4.1.10/ubuntu14/irods-icommands-4.1.10-ubuntu14-x86_64.deb
+		# run the install
+		sudo apt-get install ~/irods_install.deb
+		echo "**************************************"
+		echo "**************************************"
+		;;
+	matlabMCR2017b)
+		echo "**************************************"
+		echo "Installing Matlab MCR 2017b"
+		echo "**************************************"
+		# make the folder for the MCR 2017b
+		mkdir -p ~/phytoMorphTK/installFiles/matlabMCR2017b/
+		# download MCR from matlab
+		wget ~/phytoMorphTK/installFiles/matlabMCR2017b.zip https://www.mathworks.com/supportfiles/downloads/R2017b/deployment_files/R2017b/installers/glnxa64/MCR_R2017b_glnxa64_installer.zip
+		# unzip the zip file
+		unzip -q MCR_R2017b_glnxa64_installer.zip -d ~/phytoMorphTK/installFiles/matlabMCR2017b/
+		# run the installer
+ 		~/phytoMorphTK/installFiles/matlabMCR2017b/install -agreeToLicense yes -mode silent
+		# remove the unzipped
+		rm -r ~/phytoMorphTK/installFiles/matlabMCR2017b/
+		echo "**************************************"
+		echo "**************************************"
+		;;
+	sqlite3)
+		echo "**************************************"
+		echo "Installing sqlite3"
+		echo "**************************************"
+		sudo apt-get install sqlite3
+		echo "**************************************"
+		echo "**************************************"
+		;;
+	gphoto2)
+		echo "**************************************"
+		echo "Installing gphoto2"
+		echo "**************************************"
+		sudo apt-get install gphoto2
+		echo "**************************************"
+		echo "**************************************"
+		;;
+	*)
+		echo "Please select a phytoMorph Tool Kit to install"
+		;;
+esac

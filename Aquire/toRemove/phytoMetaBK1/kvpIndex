@@ -1,0 +1,52 @@
+#!/bin/bash
+# get the key value pair by index number
+# this is not the most effective search but gets the job done
+
+# index of key
+sel=$1
+fileName=$2
+#echo $fileName
+#read fileName
+N=${#fileName}
+
+length=$(($N-1))
+runningSum=0
+cnt=0
+kvpList=()
+curIndex=0
+#echo 'LENGTH:'$length
+for index in $(seq 0 1 $length)
+	do
+
+	letter=${fileName:index:1}
+
+	#echo "workingON:"$letter
+
+	# detected opening
+	if [ "$letter" == "{" ]
+	then
+		runningSum=$(($runningSum-1))
+	fi
+
+	# detected closing
+	if [ "$letter" == "}" ]
+	then
+		runningSum=$(($runningSum+1))
+	fi
+
+	# detected even sum game
+	if [ "$runningSum" -eq "0" ]
+	then
+		if [ "$index" -ne "0" ]
+		then
+			curLength=$(($index-$curIndex+1))
+			curKVP=${fileName:$curIndex:$curLength}
+			kvpList+=( $curKVP )
+			curIndex=$(($index+1))
+			(( cnt++ ))
+		fi	
+	fi
+
+done
+echo ${kvpList[$sel]}
+

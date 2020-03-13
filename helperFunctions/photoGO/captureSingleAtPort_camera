@@ -1,0 +1,6 @@
+#!/bin/bash
+# $1 := filepath
+# $2 := filename
+busport=$(./getBusportFromID $1)
+busdev=$(./formatBusPortForGphoto2 $busport)
+gphoto2 --port usb:$busdev --set-config capturetarget=1 --capture-image-and-download --force-overwrite --filename=$2$3.%C

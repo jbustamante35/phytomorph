@@ -1,0 +1,117 @@
+#!/bin/bash
+echo "----------------------------------------"
+echo "****************************************"
+echo "----------------------------------------"
+
+echo "----------------------------------------"
+genType='computer'
+computerName='testComputer1'
+computerPointer=$(./genAPI "$genType" "$computerName")
+echo "computerPointer:"$computerPointer
+obj=$(./iprojectPtr "$computerPointer")
+echo "@ptr---->"
+echo $obj
+echo "<----@ptr"
+echo "----------------------------------------"
+
+genType='usbPort'
+portNumber=1
+hName='Grey worm'
+deviceType='scanner'
+portPointer=$(./genAPI "$genType" "$portNumber" "$hName" "$computerPointer" "$deviceType")
+echo "portPointer:"$portPointer
+
+genType='tileTrigger'
+title='Test Sequence 1'
+metaN=1
+sampleN=1
+triggerPointer=$(./genAPI "$genType" "$title" "$metaN" "$sampleN" "$portPointer")
+echo "seqPointer:"$triggerPointer
+
+genType='tileTrigger'
+title='Test Sequence II'
+metaN=1
+sampleN=1
+triggerPointer=$(./genAPI "$genType" "$title" "$metaN" "$sampleN" "$portPointer")
+echo "seqPointer:"$triggerPointer
+
+genType='usbPort'
+portNumber=1
+hName='Gandalf'
+deviceType='camera'
+portPointer=$(./genAPI "$genType" "$portNumber" "$hName" "$computerPointer" "$deviceType")
+echo "portPointer:"$portPointer
+
+genType='usbPort'
+portNumber=1
+hName='Red Beard'
+deviceType='scanner'
+portPointer=$(./genAPI "$genType" "$portNumber" "$hName" "$computerPointer" "$deviceType")
+echo "portPointer:"$portPointer
+
+
+echo "----------------------------------------"
+genType='computer'
+computerName='testComputer2'
+computerPointer=$(./genAPI "$genType" "$computerName")
+echo "computerPointer:"$computerPointer
+obj=$(./iprojectPtr "$computerPointer")
+echo "@ptr---->"
+echo $obj
+echo "<----@ptr"
+echo "----------------------------------------"
+
+genType='usbPort'
+portNumber=1
+hName='Rose'
+deviceType='scanner'
+portPointer=$(./genAPI "$genType" "$portNumber" "$hName" "$computerPointer" "$deviceType")
+echo "portPointer:"$portPointer
+
+genType='usbPort'
+portNumber=1
+hName='Blanche'
+deviceType='camera'
+portPointer=$(./genAPI "$genType" "$portNumber" "$hName" "$computerPointer" "$deviceType")
+echo "portPointer:"$portPointer
+
+genType='usbPort'
+portNumber=1
+hName='Dorothy'
+deviceType='scanner'
+portPointer=$(./genAPI "$genType" "$portNumber" "$hName" "$computerPointer" "$deviceType")
+echo "portPointer:"$portPointer
+
+genType='usbPort'
+portNumber=1
+hName='Ma'
+deviceType='scanner'
+portPointer=$(./genAPI "$genType" "$portNumber" "$hName" "$computerPointer" "$deviceType")
+echo "portPointer:"$portPointer
+
+obj=$(./iprojectPtr "$computerPointer")
+echo "@ptr---->"
+echo $obj
+echo "<----@ptr"
+echo "----------------------------------------"
+
+
+genType='messageBody'
+fileData='/fileData1/filedata2/'
+folderData='/folderData/folderData2/'
+command='command'
+messageBodyPointer=$(./genAPI "$genType" "$fileData" "$folderData" "$command")
+echo "messageBodyPointer:"$messageBodyPointer
+echo "----------------------------------------"
+#genType='tile'
+#ptrTarget=$portPointer
+#ptrMsg=$messageBodyPointer
+#tilePointer=$(./genAPI "$genType" "$ptrTarget" "$ptrMsg")
+echo "tilePointer:"$tilePointer
+echo "----------------------------------------"
+echo "----------------------------------------"
+echo "****************************************"
+echo "----------------------------------------"
+
+
+

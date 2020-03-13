@@ -1,0 +1,51 @@
+#!/bin/bash
+query=$1
+value=$2
+
+if [ "$#" -eq 2 ]
+then
+	gType='generate'
+else
+	gType='pop'
+	statement=$3
+fi
+
+pmd=$(<$PHYTO_DICT)
+open=$(echo -n $pmd | jq ".delimiter.value.cellOpening" | sed 's/"//g')
+close=$(echo -n $pmd | jq '.delimiter.value.cellClosing' | sed 's/"//g')
+delim=$(echo -n $pmd | jq '.delimiter.value.json' | sed 's/"//g')
+key=$(echo -n $pmd | jq $query)
+
+case $gType in
+
+	generate)
+	statement=$open$key$delim$value$close
+	;;
+
+	pop)
+	sep=$(cat $PHYTO_DICT | jq ".delimiter.value.sep" | sed 's/"//g')
+	length=${#statement}
+	if [ $length -eq 2 ]
+	then
+		sep=''	
+	fi
+	endIndex=$(($length-1))
+	bodyLength=$(($length-2))
+
+	frontCap=${statement:0:1}
+	endCap=${statement:$endIndex:1}
+
+	mainBody=${statement:1:$bodyLength}
+	if [ $frontCap = '[' ]
+	then
+		newStatement=$open$key$delim$value$close
+	else
+		newStatement=$key$delim$value
+	fi
+	statement=$frontCap$mainBody$sep$newStatement$endCap
+	;;
+esac
+
+echo $statement
+
+

@@ -1,0 +1,58 @@
+#!/bin/bash
+qrFile=$1
+labelWidth=$2
+labelHeight=$3
+upperLeftX=$4
+upperLeftY=$5
+humanData=$6
+tmpFileLocation=$7
+EXT=$8
+
+
+# query the width of the QR
+W=$(identify -ping -format '%w' $qrFile)
+# query the height of the QR
+H=$(identify -ping -format '%h' $qrFile)
+
+# make left sidePad
+#convert -size $upperLeftX'x'$labelHeight canvas:white $tmpFileLocation'tmpPadLeft.'$EXT
+
+# make right rightPad
+rightPadWidth=$(expr $labelWidth-$W | bc -l)
+convert -size $rightPadWidth'x'$labelHeight canvas:white $tmpFileLocation'tmpPadRight.'$EXT
+ 
+# create the text data
+convert -size $rightPadWidth'x'$labelHeight -gravity Center -background white -fill black -pointsize 12 -font Helvetica label:"$humanData" $tmpFileLocation'tmpPadRight.'$EXT
+
+#gthumb $tmpFileLocation'tmpPadRight.'$EXT
+
+# resize the text 
+#convert $tmpFileLocation'tmpPadRight.'$EXT -resize $rightPadWidth'x'$labelHeight $tmpFileLocation'tmpPadRight.'$EXT
+
+
+#gthumb $tmpFileLocation'tmpPadRight.'$EXT
+
+
+
+# make the top pad for QR
+convert -size $W'x'$upperLeftY canvas:white $tmpFileLocation'tmpPadQRtop.'$EXT
+
+# make the bottom pad for QR
+bottomH=$(expr $labelHeight-$H-$upperLeftY| bc -l)
+convert -size $W'x'$bottomH canvas:white $tmpFileLocation'tmpPadQRbottom.'$EXT
+#echo "TotalSize:"$labelHeight
+#echo "QRSize:"$H
+#echo "topSize:"$upperLeftY
+#echo "botSize:"$bottomH
+
+
+
+# make divider line
+convert -size '1x'$H canvas:black $tmpFileLocation'tmpDiv.'$EXT
+
+# attach the top to the QR
+#convert $tmpFileLocation'tmpPadQRtop.'$EXT $qrFile $tmpFileLocation'tmpPadQRbottom.'$EXT -append $qrFile
+
+# attach the left and right
+convert $qrFile $tmpFileLocation'tmpPadRight.'$EXT +append $qrFile
+

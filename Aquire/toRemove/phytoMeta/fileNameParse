@@ -1,0 +1,65 @@
+#!/bin/bash
+toRename=$1
+fileNameString=$2
+#read fileNameString
+N=${#fileNameString}
+G=${fileNameString//\}/}
+G=${#G}
+nd=$(($N-$G))
+dateSep='~'
+nfileNameString=''
+for kv in $(seq 1 1 $nd)
+do
+	kvp=$(echo $fileNameString | cut -d} -f $kv | cut -d{ -f 2)
+	v=$(echo $kvp | cut -d_ -f 2)
+	k=$(echo $kvp | cut -d_ -f 1)
+	
+	#echo "currentPair: "$kvp
+	firstletter=${v:0:1}
+
+
+	if [ "$firstletter" = "$" ]
+	then
+
+		cmdType=$(echo $v | cut -d, -f1)
+		cmdType=${cmdType:1}
+
+		case $cmdType in
+		date)
+			cmd=${v//,/\'_\'%}
+			cmd=$(echo $cmd | sed 's/'\''_'\''/\ +/')
+			cmd=$(echo $cmd | sed 's/$date//')
+			cmd=${cmd//$/}
+			cmd='date '$cmd
+			v=$(eval $cmd)
+			v=${v//_/$dateSep}
+			nfileNameString=$nfileNameString'{'$k'_'$v'}'
+		;;
+		md5)
+			v=$(./genHash md5 $toRename)
+			k="fvc"
+			nfileNameString=$nfileNameString'{'$k'_m-'$v'}'
+		;;
+		sha256)
+			v=$(./genHash sha256 $toRename)
+			k="fvc"
+			nfileNameString=$nfileNameString'{'$k'_s-'$v'}'
+		;;
+		mvc-m)
+			v=$(./genHash s-md5 $nfileNameString)
+			k="mvc"
+			nfileNameString=$nfileNameString'{'$k'_m-'$v'}'
+		;;
+		mvc-s)
+			v=$(./genHash s-sha256 $nfileNameString)
+			k="mvc"
+			nfileNameString=$nfileNameString'{'$k'_s-'$v'}'
+		;;
+		esac
+	else
+		nfileNameString=$nfileNameString'{'$kvp'}'
+	fi
+
+
+done
+echo $nfileNameString

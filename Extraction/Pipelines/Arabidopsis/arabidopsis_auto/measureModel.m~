@@ -1,0 +1,15 @@
+function [] = measureModel(U,E,C,sz)
+    M = PCA_BKPROJ(C,E,U);
+    
+    X1S = M(:,1:sz(1)*sz(2))';
+    X2S = M(:,(sz(1)*sz(2)+1):end)';
+
+    X1S  = reshape(X1S,[sz(1:end-1) 1]);
+    X2S  = reshape(X2S,[sz(1:end-1) 1]);
+    
+    
+    compS = cat(1,shiftdim(X1S,-1),shiftdim(X2S,-1));
+    
+    
+    K = diff(comp
+end

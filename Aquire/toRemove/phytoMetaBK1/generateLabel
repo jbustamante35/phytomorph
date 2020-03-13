@@ -1,0 +1,29 @@
+#!/bin/bash
+labelCount=$1
+humanData=$2
+qrData=$3
+labelWidth=$4
+labelHeight=$5
+upperLeftX=$6
+upperLeftY=$7
+tmpFileLocation=$8
+EXT=$9
+
+tmpLabel=$tmpFileLocation'label'$labelCount.$EXT
+
+# build the label's qr
+qrencode -s 10 -m 1 $qrData -o $tmpLabel
+#gthumb $tmpLabel
+#convert $tmpLabel -resample 300 -interpolate Nearest -filter point -quality 100 $tmpLabel
+#gthumb $tmpLabel
+convert $tmpLabel -interpolate Nearest -filter point -quality 100 -resize $labelHeightx$labelHeight $tmpLabel
+#./printImageSize $tmpLabel 72
+#gthumb $tmpLabel
+
+#gthumb $tmpLabel
+# pad the label
+./padLabel $tmpLabel $labelWidth $labelHeight $upperLeftX $upperLeftY $humanData $tmpFileLocation $EXT
+#./printImageSize $tmpLabel 72
+#gthumb $tmpLabel
+
+

@@ -1,0 +1,54 @@
+#!/bin/bash
+# last edited: Jan 6, 2020
+# 1:=program-name of program using the stream
+# 2:=stream-mode/type - cyverseBuffer xor cyverseStream
+# 3:=stream number - unique id of stream buffer
+# 4:=active - boolean for active or inactive
+# 5:=target - loation to stream
+# 6:=source - used for buffered streams - the loation of the source
+
+echo "#############################################"
+createDate=$(date +"%S-%M-%H-%m-%d-%y")
+programName=$1
+streamType=$2
+streamNumber=$3
+active=$4
+streamTarget=$5
+
+if [ "$#" -eq 5 ]
+then
+	streamSource=""
+else
+	streamSource=$6
+fi
+
+remoteTarget=$streamTarget
+
+
+if [ "$streamType" = "cyverseBuffer" ]
+then
+	# calculate the hash for createDate for the stream
+	mdsum="$(echo -n "$createDate" | md5sum | sed 's/ .*$//')"
+	# make the stream target the local location for the buffered data
+	streamTarget="$PHYTOSTREAMS_BASE_BUFFER$mdsum/"
+	# make the directory for the buffered data
+	mkdir -p $streamTarget
+	# bufferedOUT type
+	streamTypeOut=$streamType"_out"
+	# make the output stream connecting the buffer to the target - keyword - bufferOUT
+	sqlite3 $PHYTOSTREAMS_DB_FILE "INSERT OR IGNORE INTO streams (program,mode,number,active,target,source,createDate) VALUES ('$programName','$streamTypeOut',$streamNumber,$active,'$remoteTarget','$streamTarget','$createDate');"
+
+fi
+
+echo "creating stream $streamSource -> $streamTarget"
+
+
+sqlite3 $PHYTOSTREAMS_DB_FILE "INSERT OR IGNORE INTO streams (program,mode,number,active,target,source,createDate) VALUES ('$programName','$streamType',$streamNumber,$active,'$streamTarget','$streamSource','$createDate');"
+
+#sqlite3 $PHYTOSTREAMS_DB_FILE "UPDATE streams SET target='$streamTarget' WHERE program='$programName' AND mode='$streamType' AND number=$streamNumber;"
+
+
+echo "creating remote target location @ $remoteTarget"
+imkdir -p "$remoteTarget"
+echo "done making stream."
+echo "#############################################"

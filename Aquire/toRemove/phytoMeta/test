@@ -1,0 +1,43 @@
+#!/bin/bash
+#var=$1
+read fileName
+N=${#fileName}
+G=${fileName//\}/}
+G=${#G}
+nd=$(($N-$G))
+dateSep='~'
+nfileName=''
+
+echo "input:"$fileName
+length=$(($N-1))
+runningSum=0
+cnt=1
+
+for index in $(seq 0 1 $length)
+	do
+
+	letter=${fileName:index:1}
+	
+	# detected even sum game
+	if [ "$runningSum" -eq "0" ]
+	then
+		str[$cnt]=$index
+		(( cnt++ ))
+		echo $index
+		echo $letter	
+	fi
+
+	# detected opening
+	if [ "$letter" == "{" ]
+	then
+		runningSum=$(($runningSum-1))
+	fi
+
+	# detected closing
+	if [ "$letter" == "}" ]
+	then
+		runningSum=$(($runningSum+1))
+	fi
+done
+
+echo $cnt

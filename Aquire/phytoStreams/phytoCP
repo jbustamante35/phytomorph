@@ -1,0 +1,29 @@
+#!/bin/bash
+# this is the cp used for the stream package
+# it can be called to copy data local or to cyverse
+# 1:= type - cyverse or local
+# 2:= source file - the source file to copy
+# 3:= target location - the remote location - cyverse or local
+# 4:= target file - the target file name
+type=$1
+sourceFile=$2
+targetLocation=$3
+targetFile=$4
+targetFullFile=$targetLocation$targetFile
+echo "#############################################"
+echo "phytocopy with copyType:"$type
+echo "------------------------------"
+echo "sourceFile:"$sourceFile
+echo "targetLocation:"$targetLocation
+echo "fullFilePath:"$targetFullFile
+echo "------------------------------"
+if [ "$type" = 'cyverse' ]
+then
+	imkdir -p $targetLocation
+	iput -f $sourceFile $targetFullFile
+elif [ "$type" = 'local' ] 
+then
+	mkdir -p $targetLocation
+	cp $sourceFile $targetFullFile
+fi
+echo "#############################################"

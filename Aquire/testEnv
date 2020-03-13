@@ -1,0 +1,8 @@
+#!/bin/bash
+OLDIFS=$IFS 
+IFS=$'\n' 
+for line in $(cat ~/phytoMorphTK/tmpFiles/envVar)
+do 
+	eval $line
+done
+IFS=$OLDIFS

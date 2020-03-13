@@ -1,0 +1,44 @@
+classdef farg < variable
+    properties
+        argNumber;
+    end
+    
+    properties (Constant)
+         classDef = 'ClassDef/farg';
+    end
+    
+    methods
+        function [obj] = farg(value,argNumber,valueDatabase,valueStream,toPersist)
+            obj@variable(value,valueDatabase,valueStream,[0 0]);
+            obj.argNumber = argNumber;
+            if toPersist
+                indirectValueString = obj.persistValueToStream(value,valueStream);
+                obj.persistExistanceToStream(value,valueDatabase,indirectValueString);
+            end
+        end
+    end
+    
+    methods (Access = private)
+        function [indirectValueString] = persistValueToStream(obj,value,valueStream)
+            [indirectValueString] = persistValueToStream(value,obj.argNumber,valueStream);
+        end
+        function [] = persistExistanceToStream(obj,value,valueDatabase,indirectValueString)
+            persistExistanceToStream(value,obj.uniqueKey,indirectValueString,valueDatabase);
+        end
+    end
+    
+    methods (Static)
+        function [] = renderClass(valueDatabase)
+            import com.franz.agraph.repository.AGServer
+            import org.openrdf.model.vocabulary.RDF
+            import org.openrdf.model.vocabulary.OWL
+            import org.openrdf.model.vocabulary.RDFS
+            import org.openrdf.query.QueryLanguage
+            vf = valueDatabase.getRepository().getValueFactory();
+            cont = javaArray('org.openrdf.model.Resource',1);
+            cont(1) = [];
+            classDef = vf.createURI(functionObjects.defaultDomain,farg.classDef);
+            valueDatabase.add(classDef,RDF.TYPE,RDFS.CLASS,cont);
+        end
+    end
+end

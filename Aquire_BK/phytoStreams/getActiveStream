@@ -1,0 +1,2 @@
+#!/bin/bash
+sqlite3 $PHYTOSTREAMS_DB_FILE "select mode,target from streams WHERE program='$1' AND active=1 AND number=$2";

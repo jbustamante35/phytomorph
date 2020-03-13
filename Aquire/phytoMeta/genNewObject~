@@ -1,0 +1,18 @@
+#!/bin/bash
+typeValue=$1
+
+typeKey='type'
+
+uuidKey='uuid'
+uuidValue=$(uuidgen)
+
+dateKey='genDate'
+dateValue=$(date +"%S%M%H%d%m%Y")
+
+kv[0]=$uuidKey=$uuidValue
+kv[1]=$typeKey=$typeValue
+kv[2]=$dateKey=$dateValue
+
+#coreJSON=$(jo ${kv[@]})
+coreJSON=$(jo "${kv[@]}" | sed 's/ //g')
+echo $coreJSON

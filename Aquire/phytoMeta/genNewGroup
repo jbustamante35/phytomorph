@@ -1,0 +1,18 @@
+#!/bin/bash
+# input owner of asset group
+ownerValue=$1
+ownerKey='owner'
+assetsKey='assets'
+
+# create new object
+coreKVP=$(./genNewObject 'assetGroup')
+# owner key
+assetList=$(jo $assetsKey=$assetsValue)
+
+# put into array
+assetsValue="[]"
+
+assetList=$(jo $assetsKey=$assetsValue)
+group=$(./addKVP "$coreKVP" "$assetList")
+echo $group
+

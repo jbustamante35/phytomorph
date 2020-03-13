@@ -1,0 +1,11 @@
+#!/bin/bash
+# last edited on Jan, 02 2020
+# test program for the loop script
+#$1 echo this
+#$2 echo after sleep
+#$3 sleep this
+#$4 echo this after 3
+echo $1
+sleep $3
+echo $2
+echo $4

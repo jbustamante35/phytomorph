@@ -1,0 +1,17 @@
+#!/bin/bash
+# input owner of asset group
+name=$1
+email=$2
+nameKey='name'
+emailKey='e-mail'
+# create new object
+coreKVP=$(./genNewObject 'person')
+# make name
+name=$(jo "$nameKey=$name")
+# make email
+email=$(jo "$emailKey=$email")
+# attach name
+person=$(./addKVP "$coreKVP" "$name")
+# att email
+person=$(./addKVP "$person" "$email")
+echo $person

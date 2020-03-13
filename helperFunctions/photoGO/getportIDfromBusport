@@ -1,0 +1,3 @@
+#!/bin/bash
+id=$(sqlite3 ~/phytoMorph/dataBaseFiles/dataPorts.db "SELECT id FROM ports WHERE busport='$1';")
+echo $id

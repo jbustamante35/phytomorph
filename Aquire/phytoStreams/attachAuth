@@ -1,0 +1,14 @@
+#!/bin/bash
+# 1:= file or folder name
+streamFile=$1
+filename="${streamFile##*/}"
+basename="${streamFile%$filename}"
+
+if [ "$filename" = "" ]
+then
+	echo "File name is empty. Attaching authentication to folder".
+else
+	echo "Attaching authentication to file."
+fi
+
+iticket 

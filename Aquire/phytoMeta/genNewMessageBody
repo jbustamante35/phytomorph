@@ -1,0 +1,26 @@
+#!/bin/bash
+# sequence title
+fileData=$1
+# number of meta tiles
+folderData=$2
+# number of sample tiles
+commandData=$3
+# keys
+keys[0]='fileData'
+keys[1]='folderData'
+keys[2]='commandData'
+# values
+values[0]=$fileData
+values[1]=$folderData
+values[2]=$commandData
+# create new object
+coreKVP=$(./genNewObject 'messageBody')
+# generate objects
+cnt=0
+for k in ${keys[@]}
+do
+	tmpKVP=$(jo "$k"="${values[$cnt]}")
+	coreKVP=$(./addKVP "$coreKVP" "$tmpKVP")
+	cnt=$((cnt + 1))
+done
+echo $coreKVP

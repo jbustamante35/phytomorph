@@ -1,0 +1,3 @@
+#!/bin/bash
+out=$(expr $1/$2 | bc -l)
+echo $out

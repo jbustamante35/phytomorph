@@ -1,0 +1,19 @@
+#!/bin/bash
+# computer name
+name="$1"
+# computer key
+computerNameKey='hName'
+# usb port key
+usbPortListKey='usbPorts'
+# create new object
+coreKVP=$(./genNewObject 'computer')
+# usb port value
+usbPortListValue='[]'
+# make computer name kvp
+kvp1=$(jo "$computerNameKey"="$name")
+kvp2=$(jo "$usbPortListKey"="$usbPortListValue")
+# glue name to object
+coreKVP=$(./addKVP "$coreKVP" "$kvp1")
+coreKVP=$(./addKVP "$coreKVP" "$kvp2")
+echo $coreKVP
+

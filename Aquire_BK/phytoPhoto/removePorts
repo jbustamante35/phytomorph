@@ -1,0 +1,14 @@
+#!/bin/bash
+echo -e "Make sure all your needed devices are plugged in and on!"
+read nothing
+busPortList=$(sqlite3 $PHYTOPORTS_DB_FILE ".separator ","" "select busport from ports";)
+for port in $(echo ${busPortList} | sed "s/,/ /g")
+    do
+	dev=$(./usb_port_2_device $port)
+	if [ "$dev" = "" ]
+	then
+		echo "Deleteing Port $port from bank"
+		./deletePorts $port
+	fi
+	
+    done

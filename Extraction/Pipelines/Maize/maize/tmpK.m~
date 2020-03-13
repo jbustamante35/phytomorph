@@ -1,0 +1,4 @@
+function [] = tmpK(m,l)
+     tmpData = diff(tmpData,1,2);
+     tmpData = sum(tmpData.*tmpData,1).^.5;
+end

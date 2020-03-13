@@ -1,0 +1,4 @@
+#!/bin/bash
+fileName=$1
+verifyData $fileName
+verifyMeta $fileName

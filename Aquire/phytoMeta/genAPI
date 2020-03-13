@@ -1,0 +1,49 @@
+#!/bin/bash
+type=$1
+shift 1
+
+case $type in
+	person)
+		# --(1)name(2)email
+		obj=$(./genNewPerson "${@}")
+	;;	
+	computer)
+		# --(1)name
+		obj=$(./genNewComputer "${@}")
+	;;	
+	msg)
+		# --(1)from(2)to(3)body
+		obj=$(./genNewMessage "${@}")
+	;;
+	usbPort)
+		# --(1)portNumber(2)hName(3)computer(4)deviceType
+		obj=$(./genNewUSBPort "${@}")
+	;;
+	tileTrigger)
+		# --(1)title(2)metaN(3)sampleN(4)usbPortPtr
+		obj=$(./genNewTriggerSeq "${@}")
+	;;
+	tile)
+		# --(1)tileType(2)ptrTarget(3)ptrBody
+		#obj=$(./genNewUSBPort "${@}")
+	;;
+	label)
+
+	;;
+	labelSet)
+
+	;;
+	assetGroup)
+		obj=$(./genNewAssetGroup "${@}")
+	;;
+	messageBody)
+		obj=$(./genNewMessageBody "${@}")
+	;;
+esac
+# save the object
+./pushJobject "$obj"
+# make pointer to object
+ptr=$(./projectPtr "$obj")
+# return pointer to object
+echo $ptr
+	 

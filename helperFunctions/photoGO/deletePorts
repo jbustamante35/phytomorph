@@ -1,0 +1,2 @@
+#!/bin/bash
+sqlite3 ~/phytoMorph/dataBaseFiles/dataPorts.db "DELETE FROM ports WHERE busport='$1';"

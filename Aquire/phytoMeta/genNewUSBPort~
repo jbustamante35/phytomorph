@@ -1,0 +1,43 @@
+#!/bin/bash
+# port number
+portNumber="$1"
+# human/display name
+hName="$2"
+# computer attached to
+computer="$3"
+# device type attached to
+deviceType="$4"
+# port number key
+portNumberKey='portNumber'
+# human name key
+hNameKey='hName';
+# computer key
+computerKey='computer'
+# device type key
+deviceTypeKey='deviceType';
+# list of triggers for usbPort
+seqListKey='triggerList'
+# create new object
+coreKVP=$(./genNewObject 'usbPort')
+# generate objects
+pk=$(jo "$portNumberKey"="$portNumber")
+hk=$(jo "$hNameKey"="$hName")
+ck=$(jo "$computerKey"="$computer")
+dk=$(jo "$deviceTypeKey"="$deviceType")
+ek=$(jo "$seqListKey"="[]")
+# attach the kvps to the core
+coreKVP=$(./addKVP "$coreKVP" "$pk")
+coreKVP=$(./addKVP "$coreKVP" "$hk")
+coreKVP=$(./addKVP "$coreKVP" "$ck")
+coreKVP=$(./addKVP "$coreKVP" "$dk")
+# get ptr for this
+usbPointer=$(./projectPtr "$coreKVP")
+
+########################
+# look up computer pointer
+computerObj=$(./iprojectPtr "$computer")
+computerObj=$(./arrayOp 'append' "$computerObj" 'usbPorts' "$usbPointer")
+########################
+
+echo "$coreKVP"
+#echo "$computerObj"

@@ -1,0 +1,267 @@
+#!/bin/bash
+csvFile=$1
+
+labelWidth=$2
+labelHeight=$3
+upperLeftX=$4
+upperLeftY=$5
+horSpace=$6
+vertSpace=$7
+numCol=$8
+numRow=$9
+outerHor=${10}
+outerVer=${11}
+
+res=72.0
+
+EXT="jpg"
+labelWidthInch=$labelWidth
+labelHeightInch=$labelHeight
+labelWidth=$(expr $labelWidth*$res | bc -l)
+labelHeight=$(expr $labelHeight*$res | bc -l)
+labelWidthInchR=$(expr $labelWidth/$res | bc -l)
+labelHeightInchR=$(expr $labelHeight/$res | bc -l)
+
+upperLeftX=$(expr $upperLeftX*$res | bc -l)
+upperLeftY=$(expr $upperLeftY*$res | bc -l)
+
+horSpace=$(expr $horSpace*$res | bc -l)
+vertSpace=$(expr $vertSpace*$res | bc -l)
+
+outerHor=$(expr $outerHor*$res | bc -l)
+outerVer=$(expr $outerVer*$res | bc -l)
+
+numColSpacers=$(($numCol-1))
+totalLabelWidth=$(expr $numCol*$labelWidth | bc -l)
+totalSpaceWidth=$(expr $numColSpacers*$horSpace | bc -l)
+totalBufferWidth=$(expr $outerHor*2 | bc -l)
+totalWidth=$(expr $totalLabelWidth+$totalSpaceWidth+$totalBufferWidth | bc -l)
+totalWidthInch=$(expr $totalWidth/$res | bc -l)
+
+numRowSpacers=$(($numCol-1))
+totalLabelHeight=$(expr $numRow*$labelHeight | bc -l)
+totalSpaceHeight=$(expr $numRowSpacers*$vertSpace | bc -l)
+totalBufferHeight=$(expr $outerVer*2 | bc -l)
+totalHeight=$(expr $totalLabelHeight+$totalSpaceHeight+$totalBufferHeight | bc)
+totalHeightInch=$(expr $totalHeight/$res | bc -l)
+
+echo "Total Size:"$totalWidthInch"x"$totalHeightInch
+echo "Label Size:"$labelWidth"x"$labelHeight" pixel"
+echo "Label Size:"$labelWidthInch"x"$labelHeightInch" inch"
+echo "Label Size:"$labelWidthInchR"x"$labelHeightInchR" inch"
+echo "Width Break Down:Label="$totalLabelWidth":Space="$totalSpaceWidth"Buffer:="$totalBufferWidth
+totalLabelWidthI=$(./px2in $totalLabelWidth 72)
+totalSpaceWidthI=$(./px2in $totalSpaceWidth 72)
+totalBufferWidthI=$(./px2in $totalBufferWidth 72)
+echo "Width Break Down:Label="$totalLabelWidthI":Space="$totalSpaceWidthI"Buffer:="$totalBufferWidthI
+
+
+
+# make the tmp data location
+tmpFileLocation=$HOME/phytoMorphTK/tmpData/
+mkdir -p $tmpFileLocation
+
+csvLine=1
+stringType=()
+fields=()
+# list of label file names
+labelList=()
+
+
+# make blank label
+blankImage=$tmpFileLocation'blank.'$EXT
+convert -size $labelWidth'x'$labelHeight canvas:white $blankImage
+
+./generateLabel "0" "BLANK" "BLANK" $labelWidth $labelHeight $upperLeftX $upperLeftY $tmpFileLocation $EXT
+blankImage=$tmpFileLocation'label0'.$EXT
+#gthumb $blankImage
+
+while read labelString; do
+
+	fieldIndex=1
+	humanData=''
+	qrData=''
+	labelNumber=$(($csvLine - 2))
+
+	for cell in ${labelString//,/ }
+	do
+		# make the lower
+		#declare -l cell
+		if [ "$csvLine" -eq "1" ]
+		then
+			cell=${cell,,}
+		fi
+	
+		#############################
+		# get print types
+		if [ "$csvLine" -eq "1" ]
+		then
+			stringType[$fieldIndex]=$cell
+		fi
+
+
+		#############################
+		# get field headers
+		if [ "$csvLine" -eq "2" ]
+		then
+			fields[$fieldIndex]=$cell				
+		fi
+
+		#############################
+		# read label data
+		if [ "$csvLine" -gt "2" ]
+		then
+
+			if [[ ${stringType[$fieldIndex]} == *"h"* ]]
+			then
+				humanData=$humanData${fields[$fieldIndex]}':'$cell"\n"
+			fi
+		
+			if [[ ${stringType[$fieldIndex]}  = *"q"* ]]
+			then
+				qrData=$qrData'{'${fields[$fieldIndex]}'_'$cell'}'
+			fi
+		fi
+
+
+		((fieldIndex++))
+
+	done
+
+	#echo "hString"$humanData
+	#echo "qString"$qrData
+	
+	if [ "$csvLine" -gt "2" ]
+	then
+		#echo "hString"$humanData
+		#echo "qString"$qrData
+		labelName=$tmpFileLocation'label'$labelNumber.$EXT
+		labelList+=( $labelName )
+		./generateLabel $labelNumber $humanData $qrData $labelWidth $labelHeight $upperLeftX $upperLeftY $tmpFileLocation $EXT
+		#gthumb $labelName
+	fi
+	# increment the tile count	
+	((csvLine++))
+
+done < $csvFile
+
+
+labelIndex=0
+nC=$(($numCol-1))
+nR=$(($numRow-1))
+maxLabels=$((${#labelList[@]}-1))
+
+
+# make the between column pad
+rowPad=$tmpFileLocation'rowPad.'$EXT
+convert -size $totalWidth'x'$vertSpace canvas:white $rowPad
+
+# make the between column pad
+rowBuf=$tmpFileLocation'rowBuf.'$EXT
+convert -size $totalWidth'x'$outerVer canvas:white $rowBuf
+
+# make the between column pad
+colPad=$tmpFileLocation'colPad.'$EXT
+convert -size $horSpace'x'$labelHeight canvas:white $colPad
+
+# make the column end buffer column pad
+colBuf=$tmpFileLocation'colBuf.'$EXT
+convert -size $outerHor'x'$labelHeight canvas:white $colBuf
+
+# make the test div
+tmpDiv=$tmpFileLocation'div.'$EXT
+convert -size '1x'$labelHeight canvas:black $tmpDiv
+
+# make the test div2
+tmpDiv2=$tmpFileLocation'div2.'$EXT
+convert -size $totalWidth'x1' canvas:black $tmpDiv2
+
+# init the total image
+totalImage=$tmpFileLocation'totalSheet.'$EXT
+
+rowImage=$tmpFileLocation'tmpRow.'$EXT
+
+
+isDone=false
+sheetCount=1
+while [ "$isDone" = false ]
+do
+
+
+	
+	# copy the row buffer into the total image for init
+	cp $rowBuf $totalImage
+
+
+	newSheet=$tmpFileLocation'sheet'$sheetCount'.pdf'
+	for row in $(seq 0 $nR)
+	do
+
+
+		# init the column buffer
+		cp $colBuf $rowImage
+		
+		
+		for col in $(seq 0 $nC)
+		do
+
+			# assign file name
+			if [ $labelIndex -gt $maxLabels ]
+			then
+				curLabel=$blankImage
+				isDone=true
+			else
+				curLabel=${labelList[$labelIndex]}
+				((labelIndex++))
+			fi
+			
+			#./printImageSize $rowImage 72
+			#read H
+
+			if [ "$col" = "$nC" ]
+			then
+				# build label row
+				convert $rowImage $curLabel +append $rowImage
+			else
+				# build label row
+				convert $rowImage $curLabel $colPad  +append $rowImage
+			fi
+			
+
+		done
+
+		#./printImageSize $rowImage 72
+
+		# end cap the buffer image
+		convert $rowImage $colBuf +append $rowImage
+
+		#./printImageSize $rowImage 72
+		
+		convert $totalImage $rowImage -append $totalImage
+		
+
+
+	done
+
+	# attach the bottom row buffer
+	convert $totalImage $rowBuf -append $totalImage
+
+	
+
+	convert $totalImage $newSheet
+	#img2pdf $totalImage -o $newSheet
+
+	# query the width of the QR
+	W=$(identify -ping -format '%w' $totalImage)
+	# query the height of the QR
+	H=$(identify -ping -format '%h' $totalImage)
+	echo "finalSheetSize:"$W"x"$H" pixels"
+
+	inchW=$(expr $W/$res | bc -l)
+	inchH=$(expr $H/$res | bc -l)
+	echo "finalSheetSize:"$inchW"x"$inchH" inches"
+
+	((sheetCount++))
+done
+gthumb $totalImage
+

@@ -1,0 +1,39 @@
+#!/bin/bash
+group=$1
+asset=$2
+#echo "---------------"
+# make new insert point
+#insertPoint=$(./genNewObject 'insertPoint')
+# turn into JSON
+#insertPoint=$(jo $insertPoint)
+# glue asset to new insert
+#insertPoint=$(jo -a "$asset" "$insertPoint")
+# replace old insert point with asset + new insert
+#group=$(echo $group | jq --argjson a "$insertPoint" '.assets=[.assets[]|if .type=="insertPoint" then .=$a else . end]')
+# pull out asset array
+#echo '---------------'
+array=$(echo "$group" | jq '.assets')
+
+#echo "------"
+#echo $array
+#echo "------"
+
+#echo '****************************'
+
+
+array=$(./addELE "$array" "[$asset]")
+
+#echo $array
+
+
+#echo "------"
+#echo $array
+#echo "------"
+# flatten array
+#array=$(echo $array | jq 'flatten')
+# reattach array
+group=$(echo "$group" | jq --argjson a "$array" '.assets=$a')
+#echo $array
+echo $group
+
+

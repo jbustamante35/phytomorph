@@ -1,0 +1,4 @@
+#!/bin/bash
+# last edited on Jan, 02 2020
+id=$(sqlite3 $PHYTOPORTS_DB_FILE "SELECT id FROM ports WHERE busport='$1';")
+echo $id

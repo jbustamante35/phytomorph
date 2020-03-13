@@ -1,0 +1,15 @@
+#!/bin/bash
+tm=$1
+windowLength=$2
+######
+# 300 = window of 5 min
+# 1200 = duration of 20 min
+
+windowTime=$(($tm/$windowLength))
+windowTime=$(($windowTime*$windowLength))
+
+hashTime=$(echo "$windowTime" | sha256sum )
+hashTime=$(echo $hashTime | cut -d' ' -f 1)
+echo $windowTime:$hashTime
+######
+

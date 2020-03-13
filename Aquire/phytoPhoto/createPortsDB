@@ -1,0 +1,10 @@
+#!/bin/bash 
+# last edited on Jan, 02 2020
+# create the ports table 
+# id is the primary key and the unique device name
+# busport text is a field for information about the busport
+# busport field is the computers name for the port
+echo '***'
+echo $PHYTOPORTS_DB_FILE
+echo '***'
+sqlite3 $PHYTOPORTS_DB_FILE "CREATE TABLE IF NOT EXISTS ports (id INTEGER PRIMARY KEY,busport TEXT,busy BOOLEAN DEFAULT 0,UNIQUE (busport));"

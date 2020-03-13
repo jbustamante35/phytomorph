@@ -1,0 +1,33 @@
+#!/bin/bash
+fileName=$1
+mvc=$(./find_kvp mvc $1)
+if [ "$mvc" != "NotFound" ]
+then
+	
+	v=$(./getValue $mvc)
+	LEN=${#v}
+	LEN=$(($LEN-2))
+	type=${v:0:2}
+	fhash=${v:2:$LEN}
+
+	# hash the meta+filename
+	toHash=${fileName/$mvc/}
+	case $type in
+		s-)
+		hash=$(./genHash s-sha256 $toHash)
+		;;		
+		m-)
+		hash=$(./genHash s-md5 $toHash)
+		;;	
+	esac
+
+	# report file check
+	if [ "$hash" == "$fhash" ]
+	then
+		echo "{meta_1}"
+	else
+		echo "{meta_0}"
+	fi
+
+fi
+

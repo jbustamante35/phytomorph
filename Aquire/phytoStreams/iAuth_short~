@@ -1,0 +1,10 @@
+#!/bin/bash
+user=$1
+pw=$2
+dataStr="data.iplantc.org\n1247\n#user#\niplant\n#PW#"
+dataStr=$(echo $dataStr | sed -e "s/#user#/${user}/g")
+dataStr=$(echo $dataStr | sed -e "s/#PW#/${pw}/g")
+rm ~/.irods/.irodsA
+rm ~/.irods/irods_environment.json
+echo $dataStr
+echo -e $dataStr | iinit

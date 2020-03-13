@@ -1,0 +1,5 @@
+#!/bin/bash
+# last edited: Jan 6, 2020
+# this is not yet set up
+rm ~/phytoMorphTK/dataBaseFiles/dataStreams.db
+./createStreamsDB

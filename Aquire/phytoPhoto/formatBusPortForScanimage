@@ -1,0 +1,19 @@
+#!/bin/bash
+dev=$(./usb_port_2_device $1)
+bus=$(echo $1 | cut -d: -f1)
+
+STRLENGTH_bus=$(echo -n $bus | wc -m)
+STRLENGTH_bus=$(( 3 - $STRLENGTH_bus ));
+for i in {1..$STRLENGTH_bus}
+do
+	bus=0$bus
+done
+
+STRLENGTH_dev=$(echo -n $dev | wc -m)
+STRLENGTH_dev=$(( 3 - $STRLENGTH_dev ));
+for i in {1..$STRLENGTH_dev}
+do
+	dev=0$dev
+done
+
+echo $bus:$dev
