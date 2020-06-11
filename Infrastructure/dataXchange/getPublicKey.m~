@@ -1,0 +1,5 @@
+function [] = getPublicKey(name)
+    mksqlite('open','/mnt/scratch1/phytomorph_dev/Infrastructure/dataXchange/Xchange.db');
+    collaborator = mksqlite(['select * from collaborator where name=''' name ''';']);
+    mksqlite('close');
+end

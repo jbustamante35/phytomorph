@@ -12,18 +12,19 @@ function [T] = miniTrack(I,para)
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             % clip out the image patch around the point
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            [U1 U2] = ndgrid(para.P(1)-para.RADIUS:para.P(1)+para.RADIUS,para.P(2)-para.RADIUS:para.P(2)+para.RADIUS);
+            [U1,U2] = ndgrid(para.P(1)-para.RADIUS:para.P(1)+para.RADIUS,para.P(2)-para.RADIUS:para.P(2)+para.RADIUS);
 
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             % external vs internal
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             if para.externalInterp
-                I(:,:,1) = ba_interp2(I(:,:,1),U2,U1);
-                I(:,:,2) = ba_interp2(I(:,:,2),U2,U1);
+                J(:,:,1) = ba_interp2(I(:,:,1),U2,U1);
+                J(:,:,2) = ba_interp2(I(:,:,2),U2,U1);
             else
-                I(:,:,1) = interp2(I(:,:,1),U2,U1);
-                I(:,:,2) = interp2(I(:,:,2),U2,U1);
+                J(:,:,1) = interp2(I(:,:,1),U2,U1);
+                J(:,:,2) = interp2(I(:,:,2),U2,U1);
             end
+            I = J;
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             % take the gradient
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -50,7 +51,7 @@ function [T] = miniTrack(I,para)
             flag = 1;
             N = [];
 
-            while flag & norm(dX) > para.threshold
+            while flag && (norm(dX) > para.threshold)
                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                 % init transformation
                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -88,6 +89,6 @@ function [T] = miniTrack(I,para)
                 icnt = icnt + 1;
             end
         catch ME
-            
+            ME
         end
 end

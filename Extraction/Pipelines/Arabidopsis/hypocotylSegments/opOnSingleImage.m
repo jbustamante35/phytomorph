@@ -1,4 +1,6 @@
 function [L,WID,dB,P,loc] = opOnSingleImage(imageName,disp)
+    
+
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %% get mask and skeleton
     I = imread(imageName);
@@ -92,8 +94,12 @@ function [L,WID,dB,P,loc] = opOnSingleImage(imageName,disp)
     catch ME
         ME
     end
+    
+    
     %% display
     if disp
+        % display for paper
+        out = flattenMaskOverlay(double(I)/255,MASK);
         %close all
         Z = zeros(size(MASK,1),size(MASK,2));
         RGB = cat(3,SKEL,Z,MASK);        
@@ -108,4 +114,6 @@ function [L,WID,dB,P,loc] = opOnSingleImage(imageName,disp)
         hold off
         drawnow
     end
+    
+    
 end

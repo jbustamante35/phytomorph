@@ -1,0 +1,21 @@
+#!/bin/bash
+publicExhange="/iplant/home/nmiller/publicExchange/"
+siteName=$1
+timeout=$2
+collaboratorID=$(sqlite3 $serviceDB "SELECT owner FROM xchangePoint WHERE name='$siteName';");
+collaboratorName=$(sqlite3 $serviceDB "SELECT name FROM collaborator WHERE id='$collaboratorID';");
+siteUUID=$(sqlite3 $serviceDB "SELECT siteID FROM xchangePoint WHERE name='$siteName';");
+collaboratorUUID=$(sqlite3 $serviceDB "SELECT userID FROM collaborator WHERE id='$collaboratorID';");
+uploadURL="chtc/phytomorphoservice/service/in/$collaboratorUUID/$siteUUID/"
+curlCmd=$(mc --json share upload --recursive -E $timeout $uploadURL | jq -r .share)
+
+echo $curlCmd
+
+issueDate=$(date +"%Y_%m_%d")
+out="/mnt/snapper/nate/phytoKeyPool/exchangeManagement/site/$siteUUID/keys/upload/"
+mkdir -p $out
+curKeyFile=$siteUUID$issueDate"_upload.key"
+echo $curlCmd | gpg2 -er "$collaboratorName" > $out$curKeyFile
+iput -f $out$curKeyFile $publicExhange
+ichmod read anonymous $publicExhange$curKeyFile
+

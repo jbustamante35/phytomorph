@@ -1,0 +1,180 @@
+%% list out the contents for the return folder- needed
+FilePath = '/mnt/spaldingdata/nate/joeTest/';
+FileList = {};
+FileExt = {'tiff','tif','jpg','TIF','TIFF','PNG','png','csv','txt'};
+FileList = dig(FilePath,FileList,FileExt,1);
+%% dig for files in pile - dig over local pile
+FilePath = '/mnt/spaldingdata/nate/octerineDataStore/tassel/UIUC_2019_Tassel_images/';
+rawFileList = {};
+FileExt = {'jpg'};
+rawFileList = fdig(FilePath,FileList,FileExt,1);
+%% reduce list to file name
+orgName = {};
+for e = 1:numel(FileList)
+    [pth,nm,ext] = fileparts(FileList{e});
+    [kvp] = findKVP(nm,'originalName');
+    orgName{e} = getValue(kvp);
+end
+%% reduce original list
+rawNM = {};
+for e = 1:numel(rawFileList)
+    [pth,nm,ext] = fileparts(rawFileList{e});
+    rawNM{e} = nm;
+end
+%% match
+clear dataCluster
+for e = 1:numel(rawNM)
+    idx = find(strcmp(orgName,rawNM{e}));
+    tmp = FileList(idx);
+    
+    dataCluster(e).imageName = rawFileList{e};
+    
+    for i = 1:numel(tmp)
+        [pth,nm,ext] = fileparts(tmp{i});
+        if contains(nm,'maskNumber') && ...
+                ~contains(nm,'processedImage') && ...
+                ~contains(nm,'csvPhenoList')
+            [kvp] = findKVP(nm,'maskNumber');
+            maskIndex = str2num(getValue(kvp));
+            dataCluster(e).maskSet{maskIndex} = tmp{i};
+        elseif contains(nm,'processedImage') &&  ~contains(nm,'csvPhenoList')
+            [kvp] = findKVP(nm,'maskNumber');
+            maskIndex = str2num(getValue(kvp));
+            dataCluster(e).processedSet{maskIndex} = tmp{i};
+        elseif contains(nm,'csvPhenoList')
+            [kvp] = findKVP(nm,'maskNumber');
+            maskIndex = str2num(getValue(kvp));
+            dataCluster(e).csvSet{maskIndex} = tmp{i};
+        end
+    end
+end
+%% load some data from csv for each dataCluster
+for e = 1:numel(dataCluster)
+    dataCluster(e).numCSV = numel(dataCluster(e).csvSet);
+    cyverseList = {};
+    errList = {};
+    phenoVectors = [];
+    for c = 1:numel(dataCluster(e).csvSet)
+        try
+            d = readtext(dataCluster(e).csvSet{c});
+            cyverseList{c} = d{1};
+            errList{c} = d{end};
+
+            d(1) = [];
+            d(end) = [];
+            d = cell2mat(d);
+            phenoVectors = [phenoVectors;d];
+        catch ME
+            
+            cyverseList{c} = '';
+            errList{c} = 'POST_PROCESS: Error reading';
+            d = NaN*ones(1,8);
+            phenoVectors = [phenoVectors;d];
+        end
+    end
+    
+    dataCluster(e).cyverseList = cyverseList;
+    dataCluster(e).errList = errList;
+    dataCluster(e).phenoVectors = phenoVectors';
+    dataCluster(e).imageNameVec = e*ones(1,size(phenoVectors,1));
+    dataCluster(e).maskNameVec = 1:size(phenoVectors,1);
+    e
+    
+end
+
+%% load a mask for graph analysis
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+M = imread(dataCluster(5).maskSet{3});
+%% start processing make skeleton
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+smallAreaFilter = 70;
+% fill small holes
+M = bwareaopenSmallHoles(M,smallAreaFilter);
+% get the skeleton
+skel = bwmorph(M,'skel',inf);
+%% make hole graph
+[holeGraph] = makeHoleGraph(skel);
+%% view hole graph
+close all
+I = imread(dataCluster(5).imageName);
+h = figure;
+imshow(I,[]);
+hold on
+h = holeGraph(1).plot('r',h);
+%% look for non unique curves
+for e = 1:numel(tasselGraph(1).simplePaths)
+    nE = unique(tasselGraph(1).simplePaths(e).E,'rows');
+    J(e,:) = [size(nE,1) size(tasselGraph(1).simplePaths(e).E,1)];
+end
+%% make graph
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+[tasselGraph] = makeTasselGraph(skel);
+% trim branches
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+tasselGraph(2) = trimTerminalBranches(tasselGraph(1));
+tasselGraph(3) = trimTerminalBranches(tasselGraph(2));
+%% grab the (x,y) normalized data for the paths
+nD = tasselGraph(1).fullSimplePaths.nScore();
+testC = nD(1).bProj();
+%% stack the data for the paths
+simCurve = copy(nD);
+X = [];
+Y = [];
+for e = 1:numel(nD)
+    X = [X,nD(e).E(:,1)];
+    Y = [Y,nD(e).E(:,2)];
+end
+[Sx,Cx,Ux,Ex,Lx,ERRx,LAMx] = PCA_FIT_FULL_T(X,3);
+[Sy,Cy,Uy,Ey,Ly,ERRy,LAMy] = PCA_FIT_FULL_T(Y,3);
+Z = ones(size(Sx,1),1);
+for e = 1:size(Sx,2)
+    tmp = [Sx(:,e),Sy(:,e),Z];
+    simCurve(e).E = tmp;
+end
+%% tested at works
+simCurve = simCurve.bProj();
+simCurve.plot('g')
+%%
+iI = double(I)/255;
+simCurve(1).sampleAlongCurve(iI);
+
+                    
+%% view the graphs
+close all
+I = imread(dataCluster(5).imageName);
+h = figure;
+imshow(I,[]);
+hold on
+%h = tasselGraph(1).plot('r',h);
+%h = tasselGraph(2).plot('g',h);
+h = tasselGraph(3).plot('b',h);
+
+
+
+%% remove end segments
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+close all
+imshow(double(RGB),[]);hold on
+toProcess = fullSimpleRoutes;
+CL = {'c','g','b'};
+for l = 1:3
+    nep = [];
+    for e = 1:numel(toProcess)
+        nep(e) = size(toProcess(e).getNamedSubset('endPoints'),1);
+    end
+    level{l} = toProcess(nep < 1);
+    toProcess(nep<1) = [];
+    level{l}.plot(CL{l});
+    drawnow
+end
+simpleRoutes.plot('b');
+complexPaths.plot('k');
+%% plot results
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+close all
+imshow(double(RGB),[]);hold on
+fullSimpleRoutes.plot('g');
+simpleRoutes.plot('b');
+complexPaths.plot('k');
+[1603 3350];
+[2050 4172];

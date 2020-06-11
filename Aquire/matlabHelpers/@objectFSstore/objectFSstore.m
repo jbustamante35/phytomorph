@@ -31,9 +31,13 @@ classdef objectFSstore < handle
         % generate an object
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function [object] = generate(obj,type,varargin)
+            % call the constructure of 'type' with varargin
             [input] = obj.buildVarInput(varargin{:});
+            % build constructor
             constructor = str2func(['@' input type input]);
+            % call constructor
             object = constructor(varargin{:});
+            % write the object to disk
             fileName = obj.write(object);
             
             % special instructions when making a file object
@@ -74,6 +78,8 @@ classdef objectFSstore < handle
             if ~isa(otr,'char')
                 if isa(otr,'dptr');otr = otr.dereference();end
                 [otr] = buildFileName(obj,otr);
+            else
+                [otr] = buildFileName(obj,otr);
             end
             % read the data from file
             object = fileread(otr);
@@ -83,7 +89,9 @@ classdef objectFSstore < handle
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % write object
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function [fileName] = write(obj,otw)
+        function [fileName] = write(obj,otw,writeType)
+            % write the type to disk
+            if nargin < 3;writeType = 'json';end
             % copy the object before writing
             otw = copy(otw);
             % detach the copy
@@ -91,15 +99,26 @@ classdef objectFSstore < handle
             % build the file name
             [fileName] = buildFileName(obj,otw);
             [pth,nm,ext] = fileparts(fileName);
+            % make output locatin
             mmkdir(pth);
-            % open the file to write
-            fileID = fopen(fileName,'w');
-            % encode the json object
-            jsonotw = jsonencode(otw);
-            % write the json daata to disk
-            fprintf(fileID,'%s',jsonotw);
-            % close the file
-            fclose(fileID);
+            switch writeType
+                case 'json'
+                    % open the file to write
+                    fileID = fopen(fileName,'w');
+                    % encode the json object
+                    % this needs to be better and tested
+                    jsonotw = jsonencode(otw);
+                    % write the json daata to disk
+                    fprintf(fileID,'%s',jsonotw);
+                    % close the file
+                    fclose(fileID);
+                case 'mat'
+                    fileName = [fileName '.mat'];
+                    save(fileName,'otw');
+            end
+
+            
+            
         end
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % find objects of type
@@ -156,6 +175,8 @@ classdef objectFSstore < handle
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % this is the single point for objects to have file names
         % attached to them
+        % note: may 26, 2020
+        % filename <- [base - type - hash[1:2] - hash]
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function [fileName] = buildFileName(obj,object)
             % this line was traded for the uuid - why
@@ -163,12 +184,22 @@ classdef objectFSstore < handle
             % this line was traded for a case statement
             % hash = object.uuid;
             % put back to uuid then overwritten in file constructor
-            hash = object.uuid;
+            
+            
+            % mod to load from hash char
+            if ~isa(object,'char')
+                hash = object.uuid;
+            else
+                hash = object;
+            end
+            
             fileName = [obj.basePath object.type filesep hash(1:2) filesep hash];
         end
         
-        
-        % 
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % build an input string for varargin
+        % repeating units of x -> (x1,x2,...,xn)
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function [input] = buildVarInput(obj,varargin)
             N = numel(varargin);
             base = 'x';

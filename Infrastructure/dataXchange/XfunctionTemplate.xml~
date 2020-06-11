@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<functionList>
+
+	<function name='generateKey'>
+	generateKey() {\n
+		sudo rngd -r /dev/urandom\n
+		echo -e "Key-Type: RSA\\nKey-Length: 4096\\nSubkey-Type: RSA\\nSubkey-Length: 4096\\nName-Real:<var name='collaboratorName'></var>\\nName-Comment:<var name='keyComment'></var>\\nName-Email:<var name='keyEmail'></var>" &gt; /tmp/junk.key\n
+		gpg2 --batch --gen-key /tmp/junk.key\n
+		rm /tmp/junk.key\n
+	}\n</function>
+
+
+	<function name='exportKey'>
+	exportKey(){\n
+		gpg2 --export "<var name='collaboratorName'></var>" &gt; /tmp/public.key\n
+	}\n</function>
+
+	<function name='sharePublicKey'>
+	sharePublicKey(){\n
+		<var name='uploadKeyCurlCommand'></var>\n
+	}\n</function>
+
+	<function name='removeKeyShare'>
+	removeKeyShare(){\n
+		perl -i -pe 'BEGIN {undef $/;} s/#&lt;keyShare&gt;.*#&lt;\/keyShare&gt;//smg' test.sh\n
+	}\n</function>
+
+	<function name='refreshKey'>
+	refreshKey(){\n
+		oldKey=$1
+		keyType=$2
+		publicExhange='https://data.cyverse.org/dav-anon/iplant/home/nmiller/publicExchange/'\n
+		issueDate=$(date +"%Y_%m_%d")\n
+		siteUUID='<var name='siteID'></var>'\n
+		upKey=$(curl $publicExhange$siteUUID$issueDate"_$keyType.key" | gpg2 -d -q)\n
+		echo $upKey\n
+	}\n</function>
+
+	<function name='upload'>
+	upLoad(){\n
+		upKey=$1\n
+		source=$2\n
+		target=$3\n
+		upKey=$(echo "$upKey" | sed -e "s:&lt;NAME&gt;:$target:")\n
+		cmd="curl $upKey$source"
+ 		result=$($cmd)
+		echo $result\n
+	}\n</function>
+
+
+</functionList>
+
+
+

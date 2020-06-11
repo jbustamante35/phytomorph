@@ -1,0 +1,5 @@
+#/bin/bash
+serviceID=$(uuidgen)
+sqlite3 $serviceDB "INSERT OR IGNORE INTO service (service,serviceID) VALUES ('$1','$serviceID');"
+newID=$(sqlite3 $serviceDB "SELECT id FROM collaborator WHERE userID='$userID'")
+echo $newID

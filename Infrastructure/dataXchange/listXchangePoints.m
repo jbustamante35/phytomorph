@@ -1,0 +1,5 @@
+function [list] = listXchangePoints()
+    mksqlite('open','/mnt/scratch1/phytomorph_dev/Infrastructure/dataXchange/Xchange.db');
+    list = mksqlite('select * from xchangePoint');
+    mksqlite('close');
+end

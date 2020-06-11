@@ -1,0 +1,718 @@
+%% list out the contents for the return folder
+FilePath = '/mnt/spaldingdata/nate/joeTest/';
+FileList = {};
+FileExt = {'tiff','tif','jpg','TIF','TIFF','PNG','png','csv','txt'};
+FileList = dig(FilePath,FileList,FileExt,1);
+%% dig for files in pile - dig over local pile
+FilePath = '/mnt/spaldingdata/nate/octerineDataStore/tassel/UIUC_2019_Tassel_images/';
+rawFileList = {};
+FileExt = {'jpg'};
+rawFileList = fdig(FilePath,FileList,FileExt,1);
+%% reduce list to file name
+orgName = {};
+for e = 1:numel(FileList)
+    [pth,nm,ext] = fileparts(FileList{e});
+    [kvp] = findKVP(nm,'originalName');
+    orgName{e} = getValue(kvp);
+end
+%% reduce original list
+rawNM = {};
+for e = 1:numel(rawFileList)
+    [pth,nm,ext] = fileparts(rawFileList{e});
+    rawNM{e} = nm;
+end
+%% match
+clear dataCluster
+for e = 1:numel(rawNM)
+    idx = find(strcmp(orgName,rawNM{e}));
+    tmp = FileList(idx);
+    
+    dataCluster(e).imageName = rawFileList{e};
+    
+    for i = 1:numel(tmp)
+        [pth,nm,ext] = fileparts(tmp{i});
+        if contains(nm,'maskNumber') && ...
+                ~contains(nm,'processedImage') && ...
+                ~contains(nm,'csvPhenoList')
+            [kvp] = findKVP(nm,'maskNumber');
+            maskIndex = str2num(getValue(kvp));
+            dataCluster(e).maskSet{maskIndex} = tmp{i};
+        elseif contains(nm,'processedImage') &&  ~contains(nm,'csvPhenoList')
+            [kvp] = findKVP(nm,'maskNumber');
+            maskIndex = str2num(getValue(kvp));
+            dataCluster(e).processedSet{maskIndex} = tmp{i};
+        elseif contains(nm,'csvPhenoList')
+            [kvp] = findKVP(nm,'maskNumber');
+            maskIndex = str2num(getValue(kvp));
+            dataCluster(e).csvSet{maskIndex} = tmp{i};
+        end
+    end
+end
+%% load some data from csv for each dataCluster
+for e = 1:numel(dataCluster)
+    dataCluster(e).numCSV = numel(dataCluster(e).csvSet);
+    cyverseList = {};
+    errList = {};
+    phenoVectors = [];
+    for c = 1:numel(dataCluster(e).csvSet)
+        try
+            d = readtext(dataCluster(e).csvSet{c});
+            cyverseList{c} = d{1};
+            errList{c} = d{end};
+
+            d(1) = [];
+            d(end) = [];
+            d = cell2mat(d);
+            phenoVectors = [phenoVectors;d];
+        catch ME
+            
+            cyverseList{c} = '';
+            errList{c} = 'POST_PROCESS: Error reading';
+            d = NaN*ones(1,8);
+            phenoVectors = [phenoVectors;d];
+        end
+    end
+    
+    dataCluster(e).cyverseList = cyverseList;
+    dataCluster(e).errList = errList;
+    dataCluster(e).phenoVectors = phenoVectors';
+    dataCluster(e).imageNameVec = e*ones(1,size(phenoVectors,1));
+    dataCluster(e).maskNameVec = 1:size(phenoVectors,1);
+    e
+    
+end
+%% load a mask for graph analysis
+M = imread(dataCluster(5).maskSet{3});
+%% start processing
+% fill small holes
+M = bwareaopenSmallHoles(M,9);
+skel = bwmorph(M,'skel',inf);
+% our method for branch points - make cross kernel
+ker = ones(3);ker(1,1) = 0;ker(1,3) = 0;ker(3,1) = 0;ker(3,3) = 0;
+% find branch points via nhood count
+bp = imfilter(double(skel),ker,'replicate') .* skel >= 4;
+% find end points
+ep = bwmorph(skel,'endPoints');
+% find branch points via binary morphology
+bp2 = bwmorph(skel,'branchPoints');
+% OR the branch points together
+bp = bp | bp2;
+% end-points, branch-points,skeleton-points
+epX = [];bpX = [];spX = [];
+epSegsX = [];
+% find the X locations
+[epX(:,2),epX(:,1)] = find(ep);
+[bpX(:,2),bpX(:,1)] = find(bp);
+[spX(:,2),spX(:,1)] = find(skel);
+%% goal: connect skeleton via branch points
+% define: branch point above
+% bp-nHood: the area near the branch point
+%           in this case is 8-connected
+% paths: list of (x,y)-pairs which include the branch point
+% and the points inbetween.
+% Solution: break into simple and complex paths.
+% Simple: paths are below as remove the nhood (dialated bp-map) from the skeleton
+% find the end points of the remaining segments and trace them.
+% Complex: create the nhood for each branch point.  If an nhood group
+% contains more than 1 branch point, then trace as follow:
+
+nhood = logical(imdilate(bp,ones(3)));
+segs = (skel==1) & (nhood == 0);
+tasselGraph = bGraph(bpX);
+
+%% trace the simple paths between nhoods
+epSegs = bwmorph(segs,'endPoints');
+[epSegsX(:,2),epSegsX(:,1)] = find(epSegs);
+R = regionprops(segs,'PixelIdxList','Image','BoundingBox');
+% for each simple segment
+% simple segment = two branch point nhood do not overlap or touch
+for s = 1:numel(R)
+    tic
+   
+    epZ = [];spZ = [];zi = [];
+    tmpZ = R(s).Image;
+    % displacement for the bounding box and image
+    deltaX = round(R(s).BoundingBox(1:2));
+    % find the skeleton points in the temp image
+    [spZ(:,2),spZ(:,1)] = find(tmpZ);
+    
+    % if the path is greater than one pixel
+    if sum(tmpZ(:)) ~= 1
+        
+        % find the segment endpoints
+        tmpEP = bwmorph(tmpZ,'endPoints');
+        [epZ(:,2),epZ(:,1)] = find(tmpEP);
+        % look up the segment end-points  in the skeleton points
+        for i = 1:size(epZ,1)
+            zi(i) = find(all(bsxfun(@eq,epZ(i,:),spZ),2));
+        end
+        % connect the skeleton points for graph
+        distM = pdist2(spZ,spZ);
+        distMSK = distM <= 2^.5;
+        ADJ = distM.*distMSK;
+        zG = graph(ADJ,'OmitSelfLoops');
+        % trace from the 
+        pathi = zG.shortestpath(zi(1),zi(end));
+    % if the path is only one pixel
+    elseif sum(tmpZ(:)) == 1
+        pathi = 1;
+        epZ = [spZ];
+    end
+    
+    % get the path co-ordinates
+    pathX = spZ(pathi,:);
+    % displace the path
+    pathX = bsxfun(@plus,pathX,deltaX-1);
+    
+    tmpCurve = bCurve(pathX);
+    
+    tmpCurve.snapToGraph(tasselGraph)
+    
+    simpleCurveArray(s) = tmpCurve;
+    toc
+end
+
+%%
+close all
+% count the number of branch points in the clump
+% segs = the paths between branch points
+junctionComplex = logical(skel - segs);
+% find the complex junctions by counting the number of branch points in the
+%  nhood
+eR = regionprops(junctionComplex,'PixelIdxList','Area','Image','Centroid','BoundingBox');
+numBranchPoints = [];
+for e = 1:numel(eR)
+    numBranchPoints(e) = sum(bp(eR(e).PixelIdxList));
+end
+complexIDX = find(numBranchPoints >= 2);
+eR = eR(complexIDX);
+
+
+cntComplex = 1;
+cntSimple = 1;
+imshow(M,[]);hold on;
+plot(spX(:,1),spX(:,2),'k.')
+for e = 1:numel(complexIDX)
+    
+    tmpbpX = [];
+    tmpspX = [];
+    tmpepX = [];
+    % get the displacemetnt
+    deltaX = round(eR(e).BoundingBox(1:2))-1;
+    % crop      
+    juntionSample = imcrop(junctionComplex,eR(e).BoundingBox);
+    skelSample = imcrop(skel,eR(e).BoundingBox);
+    branchSample = imcrop(bp,eR(e).BoundingBox);
+    endSample = imcrop(ep,eR(e).BoundingBox);
+    % find the points
+    [tmpbpX(:,2),tmpbpX(:,1)] = find(branchSample);
+    [tmpspX(:,2),tmpspX(:,1)] = find(skelSample);
+    [tmpepX(:,2),tmpepX(:,1)] = find(endSample);
+    % make graph of skeleton for "this" junction complex 
+    tempSkeletonGraph = bGraph(tmpspX);
+    tempBranchGraph = bGraph(tmpbpX,inf);
+    tempEndpointGraph = bGraph(tmpepX,inf);
+    
+    %{
+    tmp_epi = [];
+    for i = 1:size(tmpepX,1)
+        tmp_epi(i) = find(all(bsxfun(@eq,tmpspX,tmpepX(i,:)),2));
+    end
+    tmp_bpi = [];
+    for i = 1:size(tmpbpX,1)
+        tmp_bpi(i) = find(all(bsxfun(@eq,tmpspX,tmpbpX(i,:)),2));
+    end
+    %}
+
+                
+    
+    % for each branch point
+    for p = 1:size(tmpbpX,1)
+        
+        % focus on this branch point
+        strPoint = tmpbpX(p,:);
+        
+        % get the nhood
+        tmpD = bsxfun(@minus,tmpspX,strPoint);
+        tmpD = sum(tmpD.*tmpD,2).^.5;
+        nidx = find(tmpD <= 2^.5 & tmpD~=0);
+        nHOOD = tmpspX(nidx,:);
+        
+        
+        nidx = tempSkeletonGraph.matG.neighbors(tmp_bpi(p));
+ 
+        
+        nHOOD = tempSkeletonGraph.lookUpPosition(nidx);
+        tempSkeletonGraph.neighbors(tmp_bpi(p))
+        
+        
+        
+        % for each neighbor
+        for n = 1:numel(nidx)
+            
+            curNpoint = tmpspX(nidx(n),:);
+            
+            %tempBranchGraph.contains(curNpoint)
+            
+            if isempty(setdiff(curNpoint,tmpbpX,'rows'))
+                
+                
+                curveBankShort(cntSimple).X = [strPoint;curNpoint];
+                dX = diff(curveBankShort(cntSimple).X,1,1);
+                dL = sum(dX.*dX,2).^.5;
+                curveBankShort(cntSimple).length = sum(dL);
+                cntSimple = cntSimple + 1;
+                
+                
+            % if neighbor is NOT branch point
+            else
+                
+                
+                % make graph of ::skeleton-(focus + nhood(focus))
+                potentialPathsGraph = tempSkeletonGraph.remove([nHOOD;strPoint]);
+                % add back the current neighbor of the focus
+                potentialPathsGraph = potentialPathsGraph.glue(curNpoint);
+                
+                
+                %{
+                otherHood = setdiff(tmpspX,strPoint,'rows');
+                otherHood = setdiff(otherHood,nHOOD,'rows');
+                otherHood = [curNpoint;otherHood];
+                
+                opX = otherHood;
+                distM = pdist2(opX,opX);
+                distMSK = distM <= 2^.5;
+                ADJ = distM.*distMSK;
+                zG = graph(ADJ,'OmitSelfLoops');
+                
+                %otherEP = potentialPathsGraph.intersect(tempEndpointGraph);
+                
+                
+                tmp_epi = [];
+                for i = 1:size(otherEP,1)
+                    tmp_epi(i) = find(all(bsxfun(@eq,otherHood,otherEP(i,:)),2));
+                end
+                
+                
+                otherBP = intersect(otherHood,tmpbpX,'rows');
+                tmp_bpi = [];
+                for i = 1:size(otherBP,1)
+                    tmp_bpi(i) = find(all(bsxfun(@eq,otherHood,otherBP(i,:)),2));
+                end
+                
+                tot = [tmp_epi';tmp_bpi'];
+                tot = unique(tot);
+                %}
+                
+                
+                
+                sourceID = potentialPathsGraph.lookUpName(curNpoint);
+                otherEP = intersect(otherHood,tmpepX,'rows');
+                otherBP = potentialPathsGraph.intersect(tempBranchGraph);
+                % co-ordinate graph contains the end points of tracing
+                tot = otherBP.glue(otherEP);
+                [~,D] = potentialPathsGraph.shortestpathtree(sourceID,tot);
+                
+                
+                %[~,D] = zG.shortestpathtree(1,tot);
+                
+                
+                if ~isinf(D)
+                    j=1
+                    [~,midx] = min(D);
+
+                    pathi = zG.shortestpath(1,tot(midx));
+                    pathX = opX(pathi,:);
+                    
+                    pathX = [strPoint;pathX];
+                   
+                    
+                    
+                    pathX = bsxfun(@plus,pathX,deltaX);
+                    
+                    curveBankComplex(cntComplex).X = pathX;
+                    dX = diff(curveBankComplex(cntComplex).X,1,1);
+                    dL = sum(dX.*dX,2).^.5;
+                    curveBankComplex(cntComplex).length = sum(dL);
+                  
+                    plot(curveBankComplex(cntComplex).X(:,1),curveBankComplex(cntComplex).X(:,2),'r')
+                    hold on
+                    drawnow
+                    
+                    cntComplex = cntComplex + 1;
+                    
+                    %{
+                    close all
+                    imshow(juntionSample,[]);
+                    hold on
+                    plot(pathX(:,1),pathX(:,2),'r')
+                    plot(curNpoint(1),curNpoint(2),'c*');
+                    waitforbuttonpress
+                    %}
+                end
+                
+                
+            end
+        end
+    end
+end
+
+% find your neighbor(s) and ask them to connect to a desirable point
+% outside your nhood unless you neighbor is desireable
+% then it can self connect
+
+%%
+kidx = find(nbp==8);
+close all
+imshow(eR(kidx(1)).Image,[]);
+imshow(M,[]);
+hold on
+plot(spX(:,1),spX(:,2),'k.')
+plot(eR(kidx(1)).Centroid(1),eR(kidx(1)).Centroid(2),'r*');
+plot(bpX(:,1),bpX(:,2),'bo')
+%plot(bpX(:,1),bpX(:,2),'c.')
+
+%% get end-points, branch-points, and skeleton-points
+%{
+epSegs = bwmorph(segs,'endPoints');
+[epSegsX(:,2),epSegsX(:,1)] = find(epSegs);
+R = regionprops(segs,'PixelIdxList','Image','BoundingBox');
+pathListSimple = {};
+endPointListSimple = [];
+% for each simple segment
+% simple segment = two branch point nhood do not overlap or touch
+
+for s = 1:numel(R)
+    tic
+   
+    epZ = [];spZ = [];zi = [];
+    tmpZ= R(s).Image;
+    deltaX = round(R(s).BoundingBox(1:2));
+    %tmpZ = imdilate(tmpZ,ones(3));
+    %tmpZ = tmpZ == 1 & skel == 1;
+    [spZ(:,2),spZ(:,1)] = find(tmpZ);
+    
+    
+    if sum(tmpZ(:)) ~= 1
+        tmpEP = bwmorph(tmpZ,'endPoints');
+        [epZ(:,2),epZ(:,1)] = find(tmpEP);
+        
+
+        for i = 1:size(epZ,1)
+            zi(i) = find(all(bsxfun(@eq,epZ(i,:),spZ),2));
+        end
+
+        distM = pdist2(spZ,spZ);
+        distMSK = distM <= 2^.5;
+        ADJ = distM.*distMSK;
+        zG = graph(ADJ,'OmitSelfLoops');
+
+
+        pathi = zG.shortestpath(zi(1),zi(2));
+    elseif sum(tmpZ(:)) == 1
+        pathi = 1;
+        epZ = [spZ;spZ];
+    end
+    
+    pathX = spZ(pathi,:);
+    pathX = bsxfun(@plus,pathX,deltaX-1);
+    epZ = bsxfun(@plus,epZ,deltaX-1);
+    
+    pathListSimple{end+1} = pathX;
+    pathListSimple{end+1} = flip(pathX,1);
+    
+    %{
+    close all
+    imshow(M,[]);hold on
+    plot(pathX(:,1),pathX(:,2),'.')
+    waitforbuttonpress
+    %}
+    
+    pathIdx = [numel(pathListSimple)-1;numel(pathListSimple)];
+    endPointListSimple = [endPointListSimple;[epZ pathIdx]];
+    toc
+end
+%}
+%%
+distM = pdist2(spX,spX);
+distMSK = distM <= 2^.5;
+ADJ = distM.*distMSK;
+G = graph(ADJ,'OmitSelfLoops');
+%%
+cnt = 1;
+bpi = [];
+for e = 1:size(bpX,1)
+    bpi(e) = find(all(bsxfun(@eq,bpX(e,:),spX),2));
+end
+epi = [];
+for e = 1:size(epX,1)
+    epi(e) = find(all(bsxfun(@eq,epX(e,:),spX),2));
+end
+newADJ = zeros(size(bpX,1));
+STACK = [];
+for e = 1:size(bpX,1)
+   e
+    
+    tmpD = bsxfun(@minus,spX,bpX(e,:));
+    tmpD = sum(tmpD.*tmpD,2).^.5;
+    nidx = find(tmpD <= 2^.5);
+    bpnpX(e).X = spX(nidx,:);
+    bpnpX(e).X = setdiff(bpnpX(e).X,bpX(e,:),'rows');
+    
+    
+    for n = 1:size(bpnpX(e).X,1)
+        
+        tmpD = bsxfun(@minus,endPointListSimple(:,1:2),bpnpX(e).X(n,:));
+        tmpD = sum(tmpD.*tmpD,2).^.5;
+        [minV,midx] = min(tmpD);
+        
+        if minV <= 2^.5
+            pidx = endPointListSimple(midx,3);
+            % attach the branch point at the center of a simple
+            % statementment to start of the path
+            % attach the neighbor to the path
+            bpnpX(e).P{n}.X = [bpX(e,:);bpnpX(e).X(n,:);pathListSimple{pidx}];
+            % complete the path if the end-point is not a global endpoint
+            if ~isempty(setdiff(bpnpX(e).P{n}.X(end,:),epX))
+                nmi = find(all(bsxfun(@eq,bpnpX(e).P{n}.X(end,:),spX),2));
+                [~,D] = G.shortestpathtree(nmi,bpi);
+                [V,midx] = min(D);
+                endI = G.shortestpath(nmi,bpi(midx));
+                bpnpX(e).P{n}.X = [bpnpX(e).P{n}.X;spX(endI,:)];
+                
+                
+                strI = bpi(e);
+                stpI = bpi(midx);
+                
+                
+                tmpG = diff(bpnpX(e).P{n}.X,1,1);
+                tmpG = sum(tmpG.*tmpG,2).^.5;
+                fi = interp1(xi,yi,sum(tmpG),'linear',.00001);
+                fi = abs(fi);
+                fi = max(.00001,fi);
+                STACK = [STACK;fi];
+                newADJ(e,midx) = fi;
+                
+            end
+        else
+             bpnpX(e).P{n}.X = [bpX(e,:);bpnpX(e).X(n,:)];
+        end
+    end
+    
+    for u = 1:numel(bpnpX(e).P)
+        curveBank(cnt).X = bpnpX(e).P{u}.X;
+        dX = diff(curveBank(cnt).X,1,1);
+        dL = sum(dX.*dX,2).^.5;
+        curveBank(cnt).length = sum(dL);
+        cnt = cnt + 1;
+    end
+    
+    
+    %{
+    close all
+    imshow(M,[]);hold on
+    plot(spX(:,1),spX(:,2),'k.')
+    plot(bpX(e,1),bpX(e,2),'go')
+    plot(bpnpX(e).X(:,1),bpnpX(e).X(:,2),'ro')
+    for n = 1:size(bpnpX(e).X,1)
+        plot(bpnpX(e).P{n}.X(:,1),bpnpX(e).P{n}.X(:,2),'m.')
+        plot(bpnpX(e).P{n}.X(1,1),bpnpX(e).P{n}.X(1,2),'g*')
+    end
+    hold off
+    axis([bpX(e,1)-50 bpX(e,1)+50 bpX(e,2)-50 bpX(e,2)+50])
+    waitforbuttonpress
+    %}
+    min(STACK)
+    
+end
+%%
+newADJ = .5*(newADJ + newADJ');
+close all
+newG = graph(newADJ,'OmitSelfLoops');
+
+
+
+hold on
+plot(spX(:,1),spX(:,2),'k.')
+plot(spX(bpi(761),1),spX(bpi(761),2),'g.')
+plot(spX(bpi(765),1),spX(bpi(765),2),'r.')
+plot(spX(bpi,1),spX(bpi,2),'bo')
+text(bpX(763,1),bpX(763,2),num2str(763),'BackgroundColor','white')
+ %%
+for e = 1:10:size(bpX,1)
+    plot(bpX(e,1),bpX(e,2),'.')
+    text(bpX(e,1),bpX(e,2),num2str(e),'BackgroundColor','white')
+end
+%%
+close all
+for delta = 1:10
+    PP = [];
+    str = 761;
+    stp = 761+delta;
+    
+    epathi = G.shortestpath(bpi(str),bpi(stp));
+    epath = spX(epathi,:);
+    
+    
+    papthi = newG.shortestpath(str,stp);
+    
+    for e = 1:(numel(papthi)-1)
+        tmp = G.shortestpath(bpi(papthi(e)),bpi(papthi(e+1)));
+        tmp = spX(tmp,:);
+        PP = [PP;tmp];
+    end
+    
+    
+    WIND = 100;
+    imshow(M,[]);hold on
+    plot(spX(:,1),spX(:,2),'k.');
+    plot(epath(:,1),epath(:,2),'r');
+    hold on
+    plot(PP(:,1),PP(:,2),'g')
+    axis([PP(1,1)-WIND PP(1,1)+WIND PP(1,2)-WIND PP(1,2)+WIND]);
+    plot(epath(1,1),epath(1,2),'b*')
+    plot(epath(end,1),epath(end,2),'c*')
+    drawnow
+    waitforbuttonpress
+    
+end
+
+%%
+pathi = shortestpath(G,bpi(5),bpi(100));
+pathX = spX(pathi,:);
+
+close all
+imshow(M,[]);hold all
+plot(epX(:,1),epX(:,2),'.');
+plot(pathX(:,1),pathX(:,2),'r')
+%% make out list
+LAB = {'Area','Branch Number','Tassel Length','Tortuosity','Compactness','Fractal Dimension','Skeleton Length','Perimeter Length'};
+data = [dataCluster.phenoVectors];
+nm = [[dataCluster.imageNameVec];[dataCluster.maskNameVec]];
+originalNM = nm';
+rm = any(isnan(data),1);
+data(:,rm) = [];
+nm(:,rm) = [];
+data = data';
+nm = nm';
+out = 1;
+while any(out)
+    [zdata,u,s] = zscore(data);
+    [S,C,U,E,L] = PCA_FIT_FULL(zdata,3,1);
+    out = any(isoutlier(C),2);
+    data(out,:) = [];
+    nm(out,:) = [];
+end
+close all
+plot3(C(:,1),C(:,2),C(:,3),'.');
+outNM = setdiff(originalNM,nm,'rows');
+%% look at random outliers
+close all
+for e = 1:20
+    tmp = outNM(e,:);
+    cidx = tmp(1);
+    midx = tmp(2);
+    
+    I = imread(dataCluster(cidx).imageName);
+    M = imread(dataCluster(cidx).maskSet{midx});
+    P = imread(dataCluster(cidx).processedSet{midx});
+    P = imresize(permute(P,[2 1 3]),[size(I,1) size(I,2)]);
+    P = flip(P,1);
+    out = flattenMaskOverlay(I,logical(M));
+    
+    imshow([out,P],[]);
+    title(num2str(tmp))
+    drawnow
+end
+%%
+close all
+oPath = '/mnt/spaldingdata/nate/octerineDataStore/results/{projectName_TIPS}/{functionName_main}/{createDate_2020-04-28-22-02-33}/';
+maskTemplateName = [oPath '{originalName_<FILE>}{maskNumber_<MASK>}.tif'];
+processedTemplateName = [oPath '{originalName_<FILE>}{maskNumber_<MASK>}{fileType_processedImage}.png'];
+cnt = 1;
+disp = false;
+clear data;
+for e = 1:numel(rawFileList)
+    
+    bool = [];
+    
+    fileName = rawFileList{e};
+    [p,n,ex] = fileparts(fileName);
+    
+    maskName = {};
+    for m = 1:4
+        maskName{m} = strrep(strrep(maskTemplateName,'<FILE>',n),'<MASK>',num2str(m));
+        bool(m) = exist(maskName{m},'file');
+    end
+    processedName = {};
+    for m = 1:4
+        processedName{m} = strrep(strrep(processedTemplateName,'<FILE>',n),'<MASK>',num2str(m));
+        bool = [bool exist(processedName{m},'file')];
+    end
+    
+    
+    if all(bool)
+
+        area = [];
+        MN = [];
+        for m = 1:4
+            M = imread(maskName{m});
+            area(1,m) = sum(M(:));
+            M = logical(M);
+            M = imclearborder(M);
+            area(2,m) = sum(M(:));
+        end
+
+        data(cnt).fileName = fileName;
+        data(cnt).area = area;
+        data(cnt).processedName = processedName;
+        data(cnt).maskName = maskName;
+        cnt = cnt + 1;
+        
+        
+    end
+    
+    
+    if disp
+        if all(bool)
+            I = imread(rawFileList{e});
+
+            MN = [];
+            for m = 1:4
+                M = imread(maskName{m});
+                out = flattenMaskOverlay(I,M);
+                MN = cat(4,MN,out);
+            end
+
+            PN = [];
+            for m = 1:4
+                M = imread(processedName{m});
+                M = permute(M,[2 1 3]);
+                M = imresize(M,[size(I,1) size(I,2)]);
+                PN = cat(4,PN,M);
+            end
+
+            MN = cat(4,MN,PN);
+
+            
+            
+            MN = montage(MN,'Size', [2 4]);
+            drawnow
+        end
+    end
+    
+end
+%% scan for data from data structure
+Area = [];
+for e = 1:numel(data)
+    Area(e) = sum(abs(diff(data(e).area,1,1)));
+end
+fidx = find(Area ~= 0);
+clear failList
+for e = 1:numel(fidx)
+    failList(e) = data(fidx(e));
+end
+%%
+fileName = '/mnt/spaldingdata/nate/octerineDataStore/tassel/UIUC_2019_Tassel_images/DDPSC_02010-1-90_0256.jpg';
+func = project.getFunction('main');
+func.operate(fileName,makeTempLocation())

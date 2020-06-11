@@ -10,6 +10,7 @@ classdef fwdT <  handle & matlab.mixin.Heterogeneous & matlab.mixin.Copyable
     methods
         
         function [obj] = fwdT(P,fT,reset_T)
+            if nargin == 0;reset_T = false;fT = [];P = rand(1,2);end
             if nargin == 2;reset_T = false;end
             obj.P = P;
             obj.fT = fT;
@@ -17,6 +18,9 @@ classdef fwdT <  handle & matlab.mixin.Heterogeneous & matlab.mixin.Copyable
             obj.reset_T = reset_T;
         end
         
+        % get the transformation for each point
+        % the fT signature needs to have a point and globData 
+        % as inputs
         function [T] = getT(obj,globData)
             T = zeros(3,3,numel(obj));
             for e = 1:numel(obj)
@@ -27,19 +31,32 @@ classdef fwdT <  handle & matlab.mixin.Heterogeneous & matlab.mixin.Copyable
             end
         end
         
+        % hard set/force the T
+        function [] = setT(obj,T)
+            for e = 1:numel(obj)
+                obj(e).T = T(:,:,e);
+            end
+        end
+        
+        
+        
         function [P] = getP(obj)
             P = obj.P;
         end
         
+        % set the point data
         function [] = setP(obj,newP)
             obj.P = newP;
             if obj.reset_T;obj.T = obj.resetT();end
+            if ~isempty(obj.T);obj.T(1:2,3) = newP';end
         end
         
+        % 
         function [] = setPT(obj,newP,globData)
             obj.P = newP;
             obj.getT(globData);
         end
+        
         
         function [] = resetT(obj)
             szT = size(obj.T)-1;
@@ -165,7 +182,6 @@ classdef fwdT <  handle & matlab.mixin.Heterogeneous & matlab.mixin.Copyable
         end
         
         function [func] = makeTF(dX_range,dR_range,dS_range)
-            %sgn = @(X)(X==0) + sign(X);
             glf = @(X,M,m)((abs(X)>=1)*(sign(X)+(X==0))*M) + ...
                           ((abs(X)<1)*((M-m)*X+(sign(X)+(X==0))*m));
             dX1 = @(X)glf(X,dX_range(1,1),dX_range(2,1));

@@ -1,0 +1,20 @@
+function [r] = xfer_sync(source,target)
+    fprintf(['start: sync\n']);tic;
+    fprintf(['source@' source '\n']);
+    fprintf(['target@' target '\n']);
+    if (isIRODS(source) && isLOCAL(target))
+        cmd = ['irsync -r i:' source ' ' target];
+    elseif (isLOCAL(source) && isIRODS(target))
+        cmd = ['irsync -r ' source ' i:' target];
+    elseif (isLOCAL(source) && isCHTC(target))
+        cmd = ['mc mirror ' source ' ' lower(target(2:end))];
+    elseif (isCHTC(source) && isLOCAL(target))
+        cmd = ['mc mirror ' lower(source(2:end)) ' ' target];
+    elseif (isCOLD(source) && isCHTC(target))
+        
+        cmd = ['mc mirror ' source ' ' lower(target(2:end))];
+       
+    end
+    r = system(cmd);
+    fprintf(['end: sync@' num2str(toc) '\n']);
+end

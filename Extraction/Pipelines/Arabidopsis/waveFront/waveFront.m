@@ -6,8 +6,7 @@ function [] = waveFront(fileName,oPath)
     % oPath         := location to write the results
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
-   
-    
+
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % handle the file manipulations
     % make the output location
@@ -134,11 +133,13 @@ function [] = waveFront(fileName,oPath)
     % process each of the masks using the 'focus' from each of the maskFileList
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     innerLoopForMask(STACK,plantMask,'rawPlant',oPath,nm,maskFileList,configData);
-    innerLoopForMask(STACK,highMask==1 & plantMask==1,'highMask',oPath,nm,maskFileList,configData);
-    innerLoopForMask(STACK,lowMask==1 & plantMask==1,'lowMask',oPath,nm,maskFileList,configData);
+    
+    % changed to only calculate the raw mask
+    %innerLoopForMask(STACK,highMask==1 & plantMask==1,'highMask',oPath,nm,maskFileList,configData);
+    %innerLoopForMask(STACK,lowMask==1 & plantMask==1,'lowMask',oPath,nm,maskFileList,configData);
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
-    
+    here = 1;
     
     
     

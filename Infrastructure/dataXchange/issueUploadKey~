@@ -1,0 +1,33 @@
+#!/bin/bash
+
+##############################
+# process the flags
+##############################
+TYPE=''
+POSITIONAL=()
+while [[ $# -gt 0 ]]
+do
+    key="$1"
+    case $key in
+	-r|--recursive)
+	    TYPE='--recursive'
+	    shift # past argument
+	    ;;
+	-nr|--not-recursive)
+	    TYPE=''
+	    shift # past argument
+	    ;;
+	*)    # unknown option
+	    POSITIONAL+=("$1") # save it in an array for later
+	    shift # past argument
+	    ;;
+    esac
+done
+set -- "${POSITIONAL[@]}" # restore positional parameters
+##############################
+
+uploadURL=$1
+timeout=$2
+curlCmd=$(mc --json share upload $TYPE -E $timeout $uploadURL | jq -r .share)
+curlCmd=${curlCmd:5}
+echo "$curlCmd"

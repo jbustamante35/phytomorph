@@ -1,0 +1,6 @@
+#!/bin/bash
+exchangePointID=$(sqlite3 $serviceDB "SELECT id FROM xchangePoint WHERE name='$1';");
+serviceID=$(sqlite3 $serviceDB "SELECT id FROM service WHERE service='$2';");
+sqlite3 $serviceDB "INSERT OR IGNORE INTO linkTable (xchangePoint,service) VALUES ($exchangePointID','$serviceID');"
+#echo $1"("$collaboratorID")@"$2"("$exchangePointID")-->"$3"("$serviceID")"
+

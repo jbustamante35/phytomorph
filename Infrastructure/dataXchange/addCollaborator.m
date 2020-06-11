@@ -1,0 +1,9 @@
+function [id] = addCollaborator(name,email)
+    [~,userID] = system('uuidgen');userID = strtrim(userID);
+    mksqlite('open','/mnt/scratch1/phytomorph_dev/Infrastructure/dataXchange/Xchange.db');
+    mksqlite(['INSERT OR IGNORE INTO collaborator (name,email,userID) VALUES '...
+        '(''' name ''',''' email ''',''' userID ''');']);
+    id = mksqlite(['SELECT id FROM collaborator WHERE userID=''' userID ''';']);
+    id = id.id;
+    mksqlite('close');
+end

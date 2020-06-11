@@ -1,0 +1,9 @@
+#!/bin/bash
+userID=$(uuidgen)
+name=$1
+#readable=$(echo $name | sed  's/^a-zA-Z0-9]//g')
+readable=${name//[^[:alnum:]]/}
+userID=$readable'_'$userID
+sqlite3 $serviceDB "INSERT OR IGNORE INTO collaborator (name,email,userID) VALUES ('$name','$2','$userID');"
+newID=$(sqlite3 $serviceDB "SELECT id FROM collaborator WHERE userID='$userID'")
+echo $newID

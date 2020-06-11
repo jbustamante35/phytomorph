@@ -186,7 +186,7 @@ function [finalScore,nX,rawX] = detectEmergence_ver2(FileList,emergenceNet,frame
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % crop and measure each cell
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        [finalScore,nX,rawX] = cropTimeSeriesFromRectified_ver3(FileList,boundingBox,[1:1:framesToMeasure],LABELS,tform,'',emergenceNet,frameNet,nsz,zU,zE,CELLMASK,BOX,vidx,Tscore);
+        [finalScore,nX,rawX] = cropTimeSeriesFromRectified_ver3(FileList,boundingBox,[1:1:framesToMeasure],tform,'',emergenceNet,frameNet,nsz,zU,zE,CELLMASK,BOX,vidx);
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % crop and measure each cell
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

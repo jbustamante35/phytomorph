@@ -34,6 +34,18 @@ tic
 T = cat(1, T{:});
 toc
 fprintf(['Done stacking lines.\n'])
+%% try hamming
+e = 12;
+UQ = unique(vec);
+
+for e = 12:30
+    
+    vec = T(2:end,e);
+    for u = 1:numel(UQ)
+        strcmp(vec,UQ{u})
+    end
+    
+end
 %% read the pheotype data
 P = readtext('/mnt/spaldingdata/nate/phenotypes.csv');
 %% read the key file

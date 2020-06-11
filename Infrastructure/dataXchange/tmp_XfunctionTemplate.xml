@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<functionList>
+  <function name="generateKey">
+	generateKey() {\n
+		sudo rngd -r /dev/urandom\n
+		echo -e "Key-Type: RSA\\nKey-Length: 4096\\nSubkey-Type: RSA\\nSubkey-Length: 4096\\nName-Real:<var name="collaboratorName">tina.miller</var>\\nName-Comment:<var name="keyComment">siteID_</var>\\nName-Email:<var name="keyEmail">this@works.com</var>" &gt; /tmp/junk.key\n
+		gpg2 --batch --gen-key /tmp/junk.key\n
+		rm /tmp/junk.key\n
+	}\n</function>
+  <function name="exportKey">
+	exportKey(){\n
+		gpg2 --export "<var name="collaboratorName">tina.miller</var>" &gt; /tmp/public.key\n
+	}\n</function>
+  <function name="sharePublicKey">
+	sharePublicKey(){\n
+		<var name="uploadKeyCurlCommand">curl https://s3dev.chtc.wisc.edu/phytomorphservice/ -F bucket=phytomorphservice -F policy=eyJleHBpcmF0aW9uIjoiMjAyMC0wNS0wN1QyMjoxMzowNS4xMDNaIiwiY29uZGl0aW9ucyI6W1siZXEiLCIkYnVja2V0IiwicGh5dG9tb3JwaHNlcnZpY2UiXSxbInN0YXJ0cy13aXRoIiwiJGtleSIsImNvbGxhYm9yYXRvci90aW5hbWlsbGVyXzA2Y2NhZDJiLTg3OTItNGMwNC04YWQ1LTljOTE1MjdiZWNkMi9rZXlzL3B1YmxpYy5rZXkiXSxbImVxIiwiJHgtYW16LWRhdGUiLCIyMDIwMDUwN1QyMjEyMDVaIl0sWyJlcSIsIiR4LWFtei1hbGdvcml0aG0iLCJBV1M0LUhNQUMtU0hBMjU2Il0sWyJlcSIsIiR4LWFtei1jcmVkZW50aWFsIiwiQkNMTjQ0M1ZLMlpQVFJNOTg0OTYvMjAyMDA1MDcvZGVmYXVsdC9zMy9hd3M0X3JlcXVlc3QiXV19 -F x-amz-algorithm=AWS4-HMAC-SHA256 -F x-amz-credential=BCLN443VK2ZPTRM98496/20200507/default/s3/aws4_request -F x-amz-date=20200507T221205Z -F x-amz-signature=c796188cebe0f0c3787619a2c6a4fd2028bb1e9baa30b8b28b2a75e86eeca753 -F key=collaborator/tinamiller_06ccad2b-8792-4c04-8ad5-9c91527becd2/keys/public.key/public.key -F file=@/tmp/public.key</var>\n
+	}\n</function>
+  <function name="removeKeyShare">
+	removeKeyShare(){\n
+		perl -i -pe 'BEGIN {undef $/;} s/#&lt;keyShare&gt;.*#&lt;\/keyShare&gt;//smg' test.sh\n
+	}\n</function>
+  <function name="refreshKey">
+	refreshKey(){\n
+		oldKey=$1
+		keyType=$2
+		publicExhange='https://data.cyverse.org/dav-anon/iplant/home/nmiller/publicExchange/'\n
+		issueDate=$(date +"%Y_%m_%d")\n
+		siteUUID='<var name="siteID">dc7b20ad-70d5-4366-8d08-fe746f874d71</var>'\n
+		upKey=$(curl $publicExhange$siteUUID$issueDate"_$keyType.key" | gpg2 -d -q)\n
+		echo $upKey\n
+	}\n</function>
+  <function name="upload">
+	upLoad(){\n
+		upKey=$1\n
+		source=$2\n
+		target=$3\n
+		upKey=$(echo "$upKey" | sed -e "s:&lt;NAME&gt;:$target:")\n
+		cmd="curl $upKey$source"\n
+ 		result=$($cmd)\n
+		echo $result\n
+	}\n</function>
+</functionList>

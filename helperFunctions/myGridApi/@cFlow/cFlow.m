@@ -1,6 +1,26 @@
 classdef cFlow < handle
+    % model:    each job hasa submit file
+    %           each dag hasa job/node
+    %           each dag hasa description file (d-file)
+    %           each job hasa list of files it can draw in
+    %           each dag d-file has a list of var
+    %           var canbe a list of xfer files
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%
+    % files are vectors
+    % needed: a list of vectors to transfer into the job
+    %           - data/vectors can be xfered via
+    %                       1: condor file transfer
+    %                       2: pre script
+    %                       3: job-exe
+    %                       4: post script
+    %%%%%%%%%%%%%%%%%%%%%%%%
+    %                       y <- f(x).
+    % this models the execution of a function (f) on a
+    % number (x) to produce a number (y).
     
     properties (Access = public)
+        %
         jobList;
         jobFunction;
         outputLocation;
@@ -90,9 +110,6 @@ classdef cFlow < handle
                 system(CMD);
                 % make default mapping available for the memory
                 obj.addDirectoryMap([cJob.deployed_ouput_vars_location '>' obj.outputLocation]);
-                
-                
-                
             end
             
             
@@ -117,6 +134,8 @@ classdef cFlow < handle
             if nargin == 4
                 obj.valueDatabase = valueDatabase;
             end
+            
+            
         end
         
         function [] = addDirectoryMap(obj,dirMapString)
@@ -165,14 +184,18 @@ classdef cFlow < handle
         
         % this function will render a local copy of the dag files
         function [] = renderDagFile(obj,oFilePath)
+            
             if nargin == 1
                 oFilePath = obj.tmpFilesLocation;
             end
+            
             fileID = fopen([oFilePath obj.generate_dagName] ,'w');
+            
             % setup for headnode
             fprintf(fileID,'%s\n',obj.dagline_headNode);            
             %
             tmp_dagline_graph_dec = obj.dagline_graph_dec;
+            
             % renderjobs
             for jb = 1:numel(obj.jobList)
                 % assign job name var
@@ -281,7 +304,6 @@ classdef cFlow < handle
         end
         
         function [] = submitDag(obj,icommands_auth,varargin)
-            
             if nargin >= 3
                 maxidle = varargin{1};
             end
@@ -352,6 +374,7 @@ classdef cFlow < handle
                 
                 
                 tmpJob = cJob();
+                
                 % set GPU
                 tmpJob.setAsMemoryJob(obj.uniqueTimeRandStamp,obj.subMemFunc);
                 tmpJob.setNumberofArgs(numel(s.subs)-obj.n_route_to_shell);
@@ -500,7 +523,7 @@ classdef cFlow < handle
                 %CMD = ['mcc -d ' functionDirectory ' -m -v -R -singleCompThread ' functionFile];
                 %CMD = ['mcc -d ' tmpCompileDirectory ' -a ' functionFile ' -a  gmdistribution.m -a cJob.m -a im2single.m -m -v -R -singleCompThread -R -nojvm cFlow_execute.m'];
                 %CMD = ['mcc -d ' tmpCompileDirectory ' -m -v -R -singleCompThread -a ' functionFile ' -a SeriesNetwork.m -a extractSingleBugEye.m -a condorDeploy_ver0.m -a partialFunction.m -a  gmdistribution.m -a cJob.m -a im2single.m -m -v -R -singleCompThread cFlow_execute.m'];
-                CMD = ['mcc -d ' tmpCompileDirectory ' -m -v -R -singleCompThread -a gogoCount.m -a myPFwrapper.m -a network.m -a GeneralizedLinearModel.m -a ' functionFile ' -a evalSimMetrics.m -a applyAllLayers.m -a SeriesNetwork.m -a ClassificationDiscriminant.m -a partialFunction.m -a current_sorghum_network.m -a generalizeLoader.m -a generalizeFeatureExtractor.m -a gmdistribution.m -a cJob.m -a im2single.m -m -v -R -singleCompThread cFlow_execute.m'];
+                CMD = ['mcc -d ' tmpCompileDirectory ' -m -v -R -singleCompThread -a getTasselMask_ver2.m -a nameParams.m -a formalFunc.m -a gogoCount.m -a myPFwrapper.m -a network.m -a GeneralizedLinearModel.m -a ' functionFile ' -a evalSimMetrics.m -a applyAllLayers.m -a SeriesNetwork.m -a ClassificationDiscriminant.m -a partialFunction.m -a current_sorghum_network.m -a generalizeLoader.m -a generalizeFeatureExtractor.m -a gmdistribution.m -a cJob.m -a im2single.m -m -v -R -singleCompThread cFlow_execute.m'];
                 
                 eval(CMD);
                 

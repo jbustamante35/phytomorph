@@ -1,0 +1,43 @@
+#!/bin/bash
+collaboratorID='69d3d013-7b83-4b3e-bba5-6cd019fa6788'
+siteID='c45efc04-f673-43b1-8bc4-2d1f963025f4'
+issueDate=$(date +"%Y_%m_%d")
+publicExhange="/iplant/home/nmiller/publicExchange/"
+getUploadKey(){
+ publicExhange='https://data.cyverse.org/dav-anon/iplant/home/nmiller/publicExchange/'
+ issueDate=$(date +"%Y_%m_%d")
+ siteUUID='c45efc04-f673-43b1-8bc4-2d1f963025f4'
+ upKey=$(curl $publicExhange$siteUUID$issueDate"_upload.key" | gpg2 -d -q)
+ echo $upKey
+ }
+ upLoad(){
+ upKey=$(curl VAR)
+ echo $upKey
+ }
+
+#<keyShare>
+
+generateKey() {
+ sudo rngd -r /dev/urandom
+ echo -e "Key-Type: RSA\nKey-Length: 4096\nSubkey-Type: RSA\nSubkey-Length: 4096\nName-Real:tina.miller\nName-Comment:VAR\nName-Email:" > /tmp/junk.key
+ gpg2 --batch --gen-key /tmp/junk.key
+ }
+
+exportKey(){
+ gpg2 --export "tina.miller" > /tmp/public.key
+ }
+
+sharePublicKey(){
+ curl https://s3dev.chtc.wisc.edu/phytomorphservice/ -F x-amz-signature=82d47463c8f96a7449409355b3b18127e72e89cf7ea2be292593a75cf65d92c1 -F bucket=phytomorphservice -F policy=eyJleHBpcmF0aW9uIjoiMjAyMC0wNS0wNlQwNDo1Mjo1Ny44MzZaIiwiY29uZGl0aW9ucyI6W1siZXEiLCIkYnVja2V0IiwicGh5dG9tb3JwaHNlcnZpY2UiXSxbImVxIiwiJGtleSIsImNvbGxhYm9yYXRvci82OWQzZDAxMy03YjgzLTRiM2UtYmJhNS02Y2QwMTlmYTY3ODgva2V5cy9wdWJsaWMua2V5Il0sWyJlcSIsIiR4LWFtei1kYXRlIiwiMjAyMDA1MDZUMDQ1MTU3WiJdLFsiZXEiLCIkeC1hbXotYWxnb3JpdGhtIiwiQVdTNC1ITUFDLVNIQTI1NiJdLFsiZXEiLCIkeC1hbXotY3JlZGVudGlhbCIsIkJDTE40NDNWSzJaUFRSTTk4NDk2LzIwMjAwNTA2L2RlZmF1bHQvczMvYXdzNF9yZXF1ZXN0Il1dfQ== -F x-amz-algorithm=AWS4-HMAC-SHA256 -F x-amz-credential=BCLN443VK2ZPTRM98496/20200506/default/s3/aws4_request -F x-amz-date=20200506T045157Z -F key=collaborator/69d3d013-7b83-4b3e-bba5-6cd019fa6788/keys/public.key -F file=@/tmp/public.key
+ }
+
+removeKeyShare(){
+ perl -i -pe 'BEGIN {undef $/;} s/#<keyShare>.*#<\/keyShare>//smg' exchangeData 
+ }
+
+generateKey
+exportKey
+sharePublicKey
+#</keyShare>
+
+getUploadKey

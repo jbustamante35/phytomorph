@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="utf-8"?>
+<document>
+<main>
+    <header>
+#!/bin/bash
+    </header>
+
+<functionDef>
+
+
+
+</functionDef>
+
+    <body>
+	<variables>
+	
+		<dynamicVar>
+
+		</dynamicVar>
+
+		<staticVar>
+function localManifest(){
+    manifestLocation="$HOME/.xferManifest/"
+    manifestName=$1
+    ls -t $manifestLocation$manifestName | head -n1
+}
+		</staticVar>
+	</variables>
+
+	<parseInput>
+##############################
+# get the moniker for the sync
+##############################
+syncMoniker=$1
+##############################
+shift # remove the moniker argument
+
+##############################
+# process the extension and other arguments
+##############################
+# set extension to *
+EXTENSION='*'
+manifestLocation="$HOME/.xferManifest/"
+
+POSITIONAL=()
+while [[ $# -gt 0 ]]
+do
+    key="$1"
+    case $key in
+	-t|--fileType)
+	    EXTENSION=$EXTENSION"$2"
+	    shift # past argument
+	    shift # past value
+	    ;;
+	-o|--output)
+	    manifestLocation="$2"
+	    oldPath=$PWD
+	    mkdir -p $PWD'/'$manifestLocation
+	    cd $PWD'/'$manifestLocation
+	    manifestLocation=$PWD'/'
+	    cd $oldPath
+	    shift # past argument
+	    shift # past value
+	    ;;
+	-b|--basepath)
+	    basePath="$2"
+      	    echo "%%%%%%%%%%%%%%%%%%%%"
+	    # get the full path name of the input path
+	    oldPath=$PWD
+	    cd $PWD'/'$basePath
+	    basePath=$PWD
+	    cd $oldPath
+	    shift # past argument
+	    shift # past value
+	    ;;
+	*)    # unknown option
+	    POSITIONAL+=("$1") # save it in an array for later
+	    shift # past argument
+	    ;;
+    esac
+done
+set -- "${POSITIONAL[@]}" # restore positional parameters
+##############################
+
+##############################
+xDB="$manifestLocation/xchange.db"
+sqlite3 $xDB "CREATE TABLE IF NOT EXISTS xchange (id INTEGER PRIMARY KEY,uuid TEXT,name TEXT,basepath TEXT);"
+xUUID=$(sqlite3 $xDB "SELECT uuid FROM xchange WHERE name='$syncMoniker';")
+
+if [ -z "$xUUID" ]
+then
+    if [ -z "$basePath" ]
+    then
+	echo '**************************************'
+	echo "no basepath at moniker $syncMoniker"
+	echo '**************************************'
+	exit 1
+    else
+	syncID=$(uuidgen)
+	sqlite3 $xDB "INSERT OR IGNORE INTO xchange (uuid,name,basepath) VALUES  ('$syncID','$syncMoniker','$basePath');"
+    fi
+else
+    if [ -z "$basePath" ]
+    then
+    	basePath=$(sqlite3 $xDB "SELECT basepath FROM xchange WHERE name='$syncMoniker';")
+    fi
+fi
+##############################
+
+##############################
+# set checksum cmd
+osType=$(uname)
+if [ $osType == 'Darwin' ]; then
+	shaCmd='shasum -a 256 '
+elif [ $osType == 'Linux' ]; then
+	shaCmd='sha256sum '
+fi
+##############################
+
+##############################
+# init the manifest logs
+manifestLocation=$manifestLocation$syncMoniker'/'
+mkdir -p $manifestLocation
+manifestDatePrefix=$(date +"%Y_%m_%d_%H_%M_%S")
+manifestPrefix=$manifestLocation$manifestDatePrefix'_'
+##############################
+	</parseInput>
+	
+
+	<code>
+        <dynamicCode>
+
+
+
+        </dynamicCode>
+
+	<header>
+############################################################
+echo "###########################################"
+echo "START: build manifest";
+echo -e "\t|Name: "$syncMoniker
+echo -e "\t|Location: "$basePath
+echo -e "\t|File Type: "$EXTENSION
+echo -e "\t|Manifest: "$manifestLocation
+echo "###########################################"
+############################################################
+	</header>
+
+	<staticCode>
+# working directory
+workingDirectory=$pwd
+
+# echo search for files
+echo "start:searching@"$basePath".$EXTENSION"
+# get the file names
+find $basePath -type f -regex ".$EXTENSION$" > $manifestPrefix"localNameList.txt"
+echo "end:searching@"$basePath".$EXTENSION"
+
+# snip off the base of the file names to make them relative
+echo "start:searching@"$basePath".$EXTENSION"
+sed "s:$basePath::g" $manifestPrefix"localNameList.txt" > $manifestPrefix"localRelNameList.txt"
+echo "end:searching@"$basePath".$EXTENSION"
+
+echo "start:building manifest@"$basePath".$EXTENSION"
+
+echo -e "\t |--start:Data Hash@"$basePath".$EXTENSION"
+cat $manifestPrefix"localNameList.txt" | xargs -I {} sh -c "$shaCmd {} | cut -f1 -d' '" > $manifestPrefix"localDataHashList.txt"
+echo -e "\t |--end:Data Hash@"$basePath".$EXTENSION"
+
+echo -e "\t |--start:Name Hash@"$basePath".$EXTENSION"
+cat $manifestPrefix"localRelNameList.txt" | xargs -n1 -I {} sh -c "printf \"%s\" {} | $shaCmd | cut -f1 -d' ';" > $manifestPrefix"localNameHashList.txt"
+echo -e "\t |--end:Name Hash@"$basePath".$EXTENSION"
+
+echo -e "\t |--start:Data+Name Hash@"$basePath".$EXTENSION"
+paste -d: $manifestPrefix"localDataHashList.txt" $manifestPrefix"localNameHashList.txt" > tmp.txt
+cat tmp.txt | xargs -n1 -I {} sh -c "printf \"%s\" {} | $shaCmd | cut -f1 -d' ';" > $manifestPrefix"localGlueHashList.txt"
+echo -e "\t |--end:Data+Name Hash@"$basePath".$EXTENSION"
+
+echo -e "\t |--start:Compile Hash@"$basePath".$EXTENSION"
+paste -d, $manifestPrefix"localDataHashList.txt" $manifestPrefix"localNameHashList.txt" $manifestPrefix"localGlueHashList.txt" $manifestPrefix"localRelNameList.txt" > $manifestPrefix"localTotalHashList.txt"
+echo -e "\t |--end:Compile Hash@"$basePath".$EXTENSION"
+
+echo "end:building manifest@"$basePath".$EXTENSION"
+
+echo "start:cleanup@"$manifestLocation
+rm $manifestPrefix"localNameList.txt"
+rm $manifestPrefix"localDataHashList.txt"
+rm $manifestPrefix"localNameHashList.txt"
+rm $manifestPrefix"localGlueHashList.txt"
+rm $manifestPrefix"localRelNameList.txt"
+mv $manifestPrefix"localTotalHashList.txt" $manifestPrefix"localManifest.txt"
+sort -o $manifestPrefix"localManifest.txt" $manifestPrefix"localManifest.txt"
+echo "end:cleanup@"$manifestLocation
+echo "manifest@"$manifestPrefix"localManifest.txt"
+echo "###########################################"
+echo "END: build manifest";
+echo "###########################################"
+
+	</staticCode>
+	</code>
+
+    </body>
+
+</main>
+</document>

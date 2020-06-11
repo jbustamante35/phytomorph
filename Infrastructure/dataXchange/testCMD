@@ -1,0 +1,23 @@
+#!/bin/bash
+#<keyShare>
+
+generateKey() {
+ sudo rngd -r /dev/urandom
+ echo -e "Key-Type: RSA\nKey-Length: 4096\nSubkey-Type: RSA\nSubkey-Length: 4096\nName-Real:tina.miller\nName-Comment:VAR\nName-Email:test@email" > /tmp/junk.key
+ gpg2 --batch --gen-key /tmp/junk.key
+ }
+
+exportKey(){
+ gpg2 --export "tina.miller" > /tmp/public.key
+ }
+sharePublicKey(){
+ "curl https://s3dev.chtc.wisc.edu/phytomorphservice/ -F policy=eyJleHBpcmF0aW9uIjoiMjAyMC0wNS0wNFQyMDoyODowMS4xNTNaIiwiY29uZGl0aW9ucyI6W1siZXEiLCIkYnVja2V0IiwicGh5dG9tb3JwaHNlcnZpY2UiXSxbInN0YXJ0cy13aXRoIiwiJGtleSIsInVzZXIvNjNiNDlmNzItYjI3NC00OTYyLTlmOWEtNmFiMzBlNDZiNzc5Il0sWyJlcSIsIiR4LWFtei1kYXRlIiwiMjAyMDA1MDRUMjAyNzAxWiJdLFsiZXEiLCIkeC1hbXotYWxnb3JpdGhtIiwiQVdTNC1ITUFDLVNIQTI1NiJdLFsiZXEiLCIkeC1hbXotY3JlZGVudGlhbCIsIkJDTE40NDNWSzJaUFRSTTk4NDk2LzIwMjAwNTA0L2RlZmF1bHQvczMvYXdzNF9yZXF1ZXN0Il1dfQ== -F x-amz-algorithm=AWS4-HMAC-SHA256 -F x-amz-credential=BCLN443VK2ZPTRM98496/20200504/default/s3/aws4_request -F x-amz-date=20200504T202701Z -F x-amz-signature=bb5085dec0988db34781d6d5d1b3104af9adf758ce7009ad164daefa30669457 -F bucket=phytomorphservice -F key=user/63b49f72-b274-4962-9f9a-6ab30e46b779/public.key -F file=@/tmp/public.key"
+ }
+removeKeyShare(){/n perl -i -pe 'BEGIN {undef $/;} s/#<keyShare>.*#<\/keyShare>//smg' testCMD }/n
+#</keyShare>
+
+generateKey
+exportKey
+sharePublicKey
+removeKeyShare
+

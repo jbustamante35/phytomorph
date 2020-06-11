@@ -1,0 +1,106 @@
+function [FileData] = parseCyVerseQuery(txt)
+    if exist(txt,'file')
+        txt = fileread(txt);
+    end
+    % parse the output from the CyVerse query
+    data = parseRecords(txt);
+    % add the file EXT
+    data = addEXT(data);
+    % get the CyVerse user
+    data = getUser(data);
+    % make a set of unique users
+    userUQ = unique({data.USER});
+    % make a set of unique exts
+    extUQ = unique({data.EXT});
+    
+    % keep only tifs that are not associated with analyses
+    kidx = strcmp({data.EXT},'.tif') & ...
+            ~contains({data.DATA_NAME},'analyses') & ...
+            ~contains({data.COLL_NAME},'analyses');
+    data = data(kidx);
+    
+    % make a set (A) of sets (B) such that the elements (e) in B have a
+    % common file name. AKA, group the files by their names.
+    fileNameUQ = unique({data.DATA_NAME});
+    for u = 1:numel(fileNameUQ)
+        fidx = find(strcmp({data.DATA_NAME},fileNameUQ{u}));
+        dataSet(u).set = data(fidx);
+        dataSet(u).N = numel(fidx);
+    end
+    
+    % remove multiple copies from the list
+    % rule #1 - if bamcfarland is not one of the owners then use the first
+    % file in the list
+    % rule #2 - if bamcfarland is one of the owners use that file in the
+    % list
+    fidx = find([dataSet.N] >= 2);
+    IL = [];
+    for e = 1:numel(fidx)
+        ownerList = {};
+        for u = 1:dataSet(fidx(e)).N
+            ownerList{u} = dataSet(fidx(e)).set(u).USER;
+        end
+        
+        if ~contains(ownerList,'bamcfarland')
+            ridx = 2:dataSet(fidx(e)).N;
+            dataSet(fidx(e)).set(ridx) = [];
+            dataSet(fidx(e)).N = 1;
+        else
+            ridx = find(~strcmp(ownerList,'bamcfarland'));
+            dataSet(fidx(e)).set(ridx) = [];
+            dataSet(fidx(e)).N = 1;
+        end
+    end
+    
+    for e = 1:numel(dataSet)
+        fileList(e) = dataSet(e).set(1);
+    end
+    
+    
+    % make a set of unique users
+    userUQ = unique({fileList.USER});
+    
+    
+    for e = 1:numel(IL)
+        dataSet(fidx(IL(e)))
+    end
+    
+    
+    
+    bool = searchCollectionForKey(data,{'ear','cob','kernel'});
+    sum(bool,1)
+    
+    
+end
+
+
+function [userCounts] = countOwnership(data)
+    for e 
+        
+end
+function [data] = addEXT(data)
+    for e = 1:numel(data)
+        [~,~,data(e).EXT] = fileparts(data(e).DATA_NAME);
+    end
+end
+
+function [bool] = searchCollectionForKey(data,key,ig)
+    if nargin == 2;ig = true;end
+    for e = 1:numel(data)
+        for k = 1:numel(key)
+            bool(e,k) = contains(data(e).COLL_NAME,key{k},'IgnoreCase',ig);
+        end
+    end
+end
+
+function [data] = getUser(data)
+    for e = 1:numel(data)
+        fidx = strfind(data(e).COLL_NAME,filesep);
+        data(e).USER = data(e).COLL_NAME((fidx(3)+1):(fidx(4)-1));
+    end
+end
+
+%{
+    txt = '/home/nate/whole.txt';
+    FileData = parseCyVerseQuery(txt);
+%}
