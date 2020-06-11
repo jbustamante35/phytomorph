@@ -8,6 +8,7 @@ classdef messageRouter < doid
     methods
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % constructor for a router
+        %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function [obj] = messageRouter(inChannel)
             % init object
@@ -28,7 +29,11 @@ classdef messageRouter < doid
             entry = obj.addressBook.getSelfEntry();
         end
         
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function [] = processMessage(obj,msg)
+            here = 1;
             %
             if isa(class(message.body.data),'function_handle')
                 

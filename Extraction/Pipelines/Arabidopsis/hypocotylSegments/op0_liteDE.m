@@ -1,16 +1,31 @@
-function [] = op0_liteDE(imageStack,oPath,disp)
+function [success] = op0_liteDE(imageStack,oPath,disp)
+    success = true;
     try
+        
+        
+        fprintf(['start: init vars \n']);
+        % get file path, name, extension
         [p,n,e] = fileparts(imageStack{1});
         mkdir(oPath);
         % make the num to process small for testing
         numToProcess = numel(imageStack);
+        % if test, then only 10 or less
         %numToProcess = min(numToProcess,10);
         % remove and sort imageStack
         [imageStack] = removeANDsort(imageStack);
-
+        fprintf(['end: init vars \n']);
+        
+        
+        
+        % operate on single image
         for e = 1:numToProcess
-            [L{e} WID{e} dB{e} P{e} loc{e}] = opOnSingleImage(imageStack{e},1);
+            fprintf(['start: process image:' num2str(e) ':' num2str(numToProcess) '\n']);tic
+            [L{e},WID{e},dB{e},P{e},loc{e}] = opOnSingleImage(imageStack{e},1);
+            fprintf(['end: process image:' num2str(e) ':' num2str(numToProcess) ':' num2str(toc) '\n']);
         end
+        
+        
+        
         for e = 1:numel(L)
             for c = 1:numel(L{e})
                 wL(e,c) = L{e}(c);
@@ -26,9 +41,13 @@ function [] = op0_liteDE(imageStack,oPath,disp)
         %fidx = strfind(tp,filesep);
         %tnm = tp(fidx(end-2):end);
         %tnm = strrep(tnm,filesep,'_');
-        figure;    
+        
+        
+        
         I = imread(imageStack{1});
         I = cat(3,I,I,I);
+        
+        figure;
         image(I);
         %imshow(I,[]);
         hold on
@@ -42,6 +61,8 @@ function [] = op0_liteDE(imageStack,oPath,disp)
         hold off
         drawnow
 
+        
+        
         fileName = [oPath p '_' tn '_frame1.tif'];    
         saveas(gca,fileName);
         
@@ -57,6 +78,8 @@ function [] = op0_liteDE(imageStack,oPath,disp)
         legend(LEG)
         %}
 
+        
+        
         figure;    
         I = imread(imageStack{end});
         I = cat(3,I,I,I);

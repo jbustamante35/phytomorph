@@ -251,3 +251,17 @@ function [S] = singleCobImage(fileName,noe,oPath,rPath,rawImage_scaleFactor,chec
     %uncLog(['ph:l:'],{rawName},'set',algorithmName,algorithmVerion,{'6'},{'1'},1);
 end
 
+%{
+
+    FilePath = '/iplant/home/nmiller/maizeData/cobData/spaldingEars_2016/';
+    FileList = {};
+    FileExt = {'tiff','tif','jpg','TIF','TIFF','PNG'};
+    FileList = idig(FilePath,FileList,FileExt);
+    
+    numberOfObjects = '3';
+    oPath = './output/';
+    rPath = '';
+    rawImage_scaleFactor = 1
+    1
+    
+%}

@@ -1,0 +1,2 @@
+#!/bin/bash
+sqlite3 $serviceDB "DELETE FROM collaborator WHERE name='$1'"

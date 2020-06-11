@@ -9,7 +9,11 @@ classdef funcP < fwdT
         function [obj] = funcP(P,fT)
             obj = obj@fwdT(P,fT);
         end
-        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % sample the function
+        % x - domain
+        % sz - size of domain
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function [F] = getF(obj,globData,x,sz,layer,id)
             if nargin == 4;layer = 1:size(globData,3);end
             if nargin < 6;id = 1;end
@@ -21,11 +25,15 @@ classdef funcP < fwdT
                     x = mtimesx(T,x,'T')';
                     v = zeros([size(x,1) numel(layer) numel(id)]);
                     for i = 1:numel(id)
+                        
+                        v(:,:,i) = squeeze(ba_interp2(globData(:,:,:,id(i)),x(:,1),x(:,2)));
+                        
+                        %{
                         for l = 1:numel(layer)
                             v(:,l,i) = ba_interp2(globData(:,:,layer(l),id(i)),x(:,1),x(:,2));
                         end
+                        %}
                     end
-                    
                     obj(e).F = v;
                     if ~isempty(sz);obj(e).F = reshape(obj(e).F,patchSZ);end
                 end

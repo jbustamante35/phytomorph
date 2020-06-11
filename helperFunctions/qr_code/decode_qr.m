@@ -23,11 +23,25 @@ function message = decode_qr(img)
 %% DEVELOPED : 7.11.0.584 (R2010b) 
 %% FILENAME  : decode_qr.m 
 
+
+fprintf(['%%%%%%%%%%%%%%%%%%%%%%%%%%%'])
+fprintf(['%%%%%%%%%%%%%%%%%%%%%%%%%%%'])
+javaclasspath
+fprintf(['%%%%%%%%%%%%%%%%%%%%%%%%%%%'])
+fprintf(['%%%%%%%%%%%%%%%%%%%%%%%%%%%'])
+%javaaddpath('./core-3.2.1.jar');
+%javaaddpath('./javase-3.2.1.jar');
+
+
+%import com.google.zxing.*;
+
 import com.google.zxing.qrcode.QRCodeReader;
 import com.google.zxing.client.j2se.BufferedImageLuminanceSource;
 import com.google.zxing.BinaryBitmap;
 import com.google.zxing.common.HybridBinarizer;
 import com.google.zxing.Result;
+
+
 %{
 %package com.google.zxing.client.j2se;
 
@@ -42,7 +56,9 @@ import com.google.zxing.Result.*;
 %import com.google.zxing.client.result.ResultParser;
 %}
 jimg = im2java2d(img);
-source = BufferedImageLuminanceSource(jimg);
+%source = BufferedImageLuminanceSource(jimg);
+source = com.google.zxing.client.j2se.BufferedImageLuminanceSource(jimg);
+
 
 bitmap = BinaryBitmap(HybridBinarizer(source));
 

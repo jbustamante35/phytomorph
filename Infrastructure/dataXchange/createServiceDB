@@ -1,0 +1,11 @@
+#!/bin/bash
+export serviceDB='/mnt/scratch1/phytomorph_dev/Infrastructure/dataXchange/Xchange.db'
+echo 'export serviceDB="/mnt/scratch1/phytomorph_dev/Infrastructure/dataXchange/Xchange.db"' >> ~/.bashrc
+sqlite3 $serviceDB "CREATE TABLE IF NOT EXISTS service (id INTEGER PRIMARY KEY,service TEXT,serviceID INTEGER);"
+sqlite3 $serviceDB "CREATE TABLE IF NOT EXISTS collaborator (id INTEGER PRIMARY KEY,name TEXT,email TEXT,userID TEXT);"
+sqlite3 $serviceDB "CREATE TABLE IF NOT EXISTS xchangePoint (id INTEGER PRIMARY KEY,name TEXT,siteID TEXT,owner INTEGER,FOREIGN KEY(owner) REFERENCES collaborator(id));"
+sqlite3 $serviceDB "CREATE TABLE IF NOT EXISTS linkTable (id INTEGER PRIMARY KEY,xchangePoint INTEGER,service INTEGER,FOREIGN KEY(xchangePoint) REFERENCES xchangePoint(id),FOREIGN KEY(service) REFERENCES service(id),UNIQUE (xchangePoint,service));"
+
+
+
+

@@ -1,7 +1,29 @@
-function [msg,qrCropBox] = getQRcode_2(I,reSZ,debug)
+function [msg,qrCropBox] = getQRcode_2(I,reSZ,saveFlag)
     try
+        if isdeployed
+            fprintf(['*******************************\n']);
+            pwd
+            fprintf(['*******************************\n']);
+            javaaddpath([pwd filesep 'core-3.2.1.jar']);
+            javaaddpath([pwd filesep 'javase-3.2.1.jar']);
+            javaclasspath
+            fprintf(['*******************************\n']);
+            ls
+            fprintf(['*******************************\n']);
+        end
+        
+        
+        
+        
         defaultAreaMinSize = 2000;
         internalBoxExpansionSize = 50;
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % read image if I is char
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        saveName = '';
+        if ischar(I);saveName = I;I = imread(I);end
+        
+        
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % set the resize feature to 1 as default
         if nargin == 1
@@ -17,6 +39,7 @@ function [msg,qrCropBox] = getQRcode_2(I,reSZ,debug)
         end
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+        
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %%%% start QR data gather
@@ -34,6 +57,9 @@ function [msg,qrCropBox] = getQRcode_2(I,reSZ,debug)
         box(3:4) = box(3:4) + 2*pad;
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+        
+        
+        
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % find the boxes within the QR sheet
@@ -98,6 +124,7 @@ function [msg,qrCropBox] = getQRcode_2(I,reSZ,debug)
         % but found to help in X number of cases
         qrCube = imresize(qrCube,2);
         qrCube = double(localcontrast(single(qrCube)));
+        if max(qrCube) > 1;qrCube = qrCube / 255;end
         qrCube = imadjust(qrCube);
         qrCube = imsharpen(qrCube,'Amount',2);
         rotValue = linspace(0,360,360);
@@ -109,7 +136,10 @@ function [msg,qrCropBox] = getQRcode_2(I,reSZ,debug)
             qrCube_read = imrotate(qrCube,rotValue(e));
             try
                 msg = decode_qr(qrCube_read);
-            catch
+            catch ME
+                fprintf(['*******************************\n']);
+                getReport(ME)
+                fprintf(['*******************************\n']);
                 msg = [];
             end
             if ~isempty(msg)
@@ -123,6 +153,7 @@ function [msg,qrCropBox] = getQRcode_2(I,reSZ,debug)
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
+        
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % get the day cube image
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -318,6 +349,24 @@ function [msg,qrCropBox] = getQRcode_2(I,reSZ,debug)
         msg(end) = [];
         msg = strrep(msg,':','_');
         msg = strrep(msg,'/','-');
+        
+        
+        
+        if ~isempty(saveName)
+            fprintf(['**********************\n']);
+            fprintf(['Entering saving phase:\n']);
+            fprintf(['**********************\n']);
+            fprintf(['MSG:' msg '\n']);
+            fprintf(['**********************\n']);
+            
+            [~,saveName] = fileparts(saveName);
+            oPath = './output/';
+            mkdir(oPath);
+            oFile = [oPath saveName];
+            fileID = fopen(oFile,'w');
+            fprintf(fileID,'%s',msg);
+            fclose(fileID);
+        end
     catch ME
         msg = '';
         qrCropBox = [];

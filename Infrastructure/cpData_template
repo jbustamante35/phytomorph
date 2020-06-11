@@ -1,0 +1,14 @@
+#!/bin/bash
+function pushFile(){
+    localFile=$(echo $1 | cut -f1 -d:)
+    remoteFile=$(echo $1 | cut -f2 -d:)
+    echo "localFile@":$localFile
+    echo "remoteFile@":$remoteFile
+    <curlCMD>
+}
+export -f pushFile
+basePath=$1
+find -E $1 -regex ".*(jpg|tif)$" > localList.txt
+sed "s:$basePath::g" localList.txt > remoteList.txt
+paste -d: localList.txt remoteList.txt > totalList.txt
+cat totalList.txt | xargs -P 2 -n1 bash -c 'pushFile "$1"' --

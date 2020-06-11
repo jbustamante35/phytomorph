@@ -34,10 +34,13 @@ classdef cJob < handle
        mainline221 = 'curl -H "Pragma:" --speed-limit 1024 --speed-time 30 --retry 3 --retry-delay 6 -o core-3.2.1.jar http://proxy.chtc.wisc.edu/SQUID/ndmiller/core-3.2.1.jar';
        mainline222 = 'curl -H "Pragma:" --speed-limit 1024 --speed-time 30 --retry 3 --retry-delay 6 -o javase-3.2.1.jar http://proxy.chtc.wisc.edu/SQUID/ndmiller/javase-3.2.1.jar';
        
-
-       mainline223 = 'curl -H "Pragma:" --speed-limit 1024 --speed-time 30 --retry 3 --retry-delay 6 -o javase-3.2.1.jar http://proxy.chtc.wisc.edu/SQUID/ndmiller/mksqlite.mexa64';
+       % sqlline - was over writing the jar file - thanks to Jason Patten -
+       % fixed on April, 28 2020
+       mainline223 = 'curl -H "Pragma:" --speed-limit 1024 --speed-time 30 --retry 3 --retry-delay 6 -o mksqlite.mexa64 http://proxy.chtc.wisc.edu/SQUID/ndmiller/mksqlite.mexa64';
        
 
+       
+       
        %%%% unset the display
        % unset the display - not sure if i need this
        mainline3 = 'unset DISPLAY';
@@ -52,11 +55,14 @@ classdef cJob < handle
        % add the environment var for icommands
        mainline9 = 'export irodsAuthFileName=$PWD/.irodsA';
        %}
+       
        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
        %%%%% for icommands new version - init in shell script
        %mainline4 = 'curl -H "Pragma:" --retry 30 --retry-delay 6 -o SLIBS.tar.gz http://proxy.chtc.wisc.edu/SQUID/ndmiller/irods-icommands-4.1.9-centos-6.installer';
        mainline311 = 'curl -H "Pragma:" --speed-limit 1024 --speed-time 30 --retry 3 --retry-delay 6 -o dcraw http://proxy.chtc.wisc.edu/SQUID/ndmiller/dcraw';
        mainline312 = 'chmod +x dcraw';
+       
+       
        mainline4 = 'chmod +x irods-icommands-4.1.9-centos-6.installer';
        mainline5 = 'sh irods-icommands-4.1.9-centos-6.installer $PWD/';
        mainline6 = 'export IRODS_PLUGINS_HOME=$PWD/icommands/plugins/';
@@ -89,14 +95,16 @@ classdef cJob < handle
        %squidURL = 'http://proxy.chtc.wisc.edu/SQUID/ndmiller/myJobData/';  
        squidURL = 'http://proxy.chtc.wisc.edu/SQUID/ndmiller/jobFiles/';  
        
+       
+       
        % flock command
        flockCommand = '+WantFlocking = true';
-       
        % osg command
        osgCommand = '+WantGlideIn = true';
        
        % input delimter
        delimiter = '**';
+       
        
        % default remote save location
        outLocation = './output';

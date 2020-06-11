@@ -28,7 +28,6 @@ classdef oid < matlab.mixin.Heterogeneous & handle & matlab.mixin.Copyable
             hash = hash(1:end-4);
         end
         
-        
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % detach the object from other objects
         % replace the connections with pointers (dptr)
@@ -39,6 +38,8 @@ classdef oid < matlab.mixin.Heterogeneous & handle & matlab.mixin.Copyable
             prop = properties(obj);
             % for each property
             for p = 1:numel(prop)
+                
+                
                 % if the object is a oid or greater
                 if isa(obj.(prop{p}),'oid')
                     % loop over the oid array and convert to ptr
@@ -47,12 +48,11 @@ classdef oid < matlab.mixin.Heterogeneous & handle & matlab.mixin.Copyable
                             obj.(prop{p})(e) = dptr(obj.(prop{p})(e));
                         end
                     end
-                    
                 end
+                
+                
             end
         end
-        
-      
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % 
@@ -76,10 +76,14 @@ classdef oid < matlab.mixin.Heterogeneous & handle & matlab.mixin.Copyable
          end
          
          function [newObject] = fromStruct(object)
+            
+            %%%%%%%%%%%%%%%%
             % build the constructor with no inputs
             constructor = str2func(['@()' object.type]);
+            % run the constructor to get the new object
             newObject = constructor();
-            %%%%
+            claz = metaclass(newObject);
+            %%%%%%%%%%%%%%%%
             %flds = fields(object);
             % when we use the newObject to generate the list of properties
             % then it could be that the ref field of a ptr does not have
@@ -103,18 +107,25 @@ classdef oid < matlab.mixin.Heterogeneous & handle & matlab.mixin.Copyable
            
             % loop over the props
             for p = 1:numel(props)
-                % if the property is a struct then render it to an object
-                % UNLESS the object isa dptr (pointer) and the prop/field
-                % is refs
-                if isa(object.(props{p}),'struct')
-                    % preallocate
-                    array(numel(object.(props{p}))) = oid;
-                    for e = 1:numel(object.(props{p}))
-                        array(e) = oid.fromStruct(object.(props{p})(e));
+                k = find(strcmp({claz.PropertyList.Name},props{p}));
+                if ~(claz.PropertyList(k).Constant)
+                    % if the property is a struct then render it to an object
+                    % UNLESS the object isa dptr (pointer) and the prop/field
+                    % is refs
+                    if isa(object.(props{p}),'struct')
+                        % preallocate
+                        array(numel(object.(props{p}))) = oid;
+                        for e = 1:numel(object.(props{p}))
+                            array(e) = oid.fromStruct(object.(props{p})(e));
+                        end
+                        newObject.(props{p}) = array;
+                    else
+                        try
+                            newObject.(props{p}) = object.(props{p});
+                        catch ME
+                            ME;
+                        end
                     end
-                    newObject.(props{p}) = array;
-                else
-                    newObject.(props{p}) = object.(props{p});
                 end
             end
          end

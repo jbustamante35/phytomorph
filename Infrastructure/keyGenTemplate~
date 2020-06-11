@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<functionList>
+	<generateKey>
+	generateKey() {
+		sudo rngd -r /dev/urandom
+		echo -e "Key-Type: RSA\nKey-Length: 4096\nSubkey-Type: RSA\nSubkey-Length: 4096\nName-Real:<NAME>VAR</NAME>\nName-Comment:<COMMENT>VAR</COMMENT>\nName-Email:<EMAIL>VAR</EMAIL>" > /tmp/junk.key
+		gpg2 --batch --gen-key /tmp/junk.key
+	}</generateKey>
+
+	<exportKey>
+	exportKey(){
+		gpg2 --export "<NAME>VAR</NAME>" > /tmp/public.key
+	}
+	</exportKey>
+
+	<sharePublicKey>
+	sharePublicKey(){
+		<CURLCMD>VAR</CURLCMD>
+	}</sharePublicKey>
+</functionList>
+
+
+

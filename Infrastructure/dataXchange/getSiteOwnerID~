@@ -1,0 +1,3 @@
+#!/bin/bash
+collaboratorID=$(sqlite3 $serviceDB "SELECT owner FROM xchangePoint WHERE name='$1';");
+

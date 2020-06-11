@@ -1,0 +1,215 @@
+#!/bin/bash
+
+input=$1
+userName=$(echo $input | cut -f1 -d'@')
+xchangePoint=$(echo $input | cut -f2 -d'@')
+expireTime=$2
+
+# get collaboratorUUID, eamil, and siteUUID
+collaboratorID=$(sqlite3 $serviceDB "SELECT userID FROM collaborator WHERE name='$userName';");
+email=$(sqlite3 $serviceDB "SELECT email FROM collaborator WHERE name='$userName';");
+siteID=$(sqlite3 $serviceDB "SELECT siteID FROM xchangePoint WHERE name='$xchangePoint';");
+
+
+hardBaseStorage="chtc/phytomorphservice/collaborator/"
+storageLocation="$collaboratorID/$siteID"
+fullSiteStorage=$hardBaseStorage$storageLocation
+
+selectFunction () {
+	functionName=$1
+	sourceDocument=$2
+	functionName=$(xmlstarlet sel -T -t -v "/functionList/function[@name='$functionName']" $sourceDocument)
+	echo -e $functionName
+}
+
+insertFunction () {
+	# insert element into template
+	functionName="$1"
+	sourceDocument="$2"
+	targetDocument="$3"
+	func=$(selectFunction "$functionName" "$sourceDocument")
+	xmlstarlet ed --inplace -s '/document/main/functionDef' -t elem -n "$functionName" -v "$func" "$targetDocument"
+	formatDocument "$targetDocument"
+}
+
+formatDocument() {
+	targetDocument=$1
+	xmlstarlet fo $targetDocument > "TEMPY"
+	mv "TEMPY" $targetDocument
+}
+
+fillInVariable () {
+	varName=$1
+	varValue=$2
+	documentName=$3
+	xmlstarlet ed --inplace -u "//var[@name='$varName']" -v "$varValue" $documentName
+}
+
+insertBlockTag (){
+	tag=$1
+	targetDocument=$2
+	if [ "$#" -eq 2 ]; then
+		xPath='/document/main/functionDef'
+	else
+		xPath=$3
+	fi
+	xmlstarlet ed --inplace -s "$xPath" -t elem -n "blockTag" -v "$tag" "$targetDocument"
+	formatDocument "$targetDocument"
+}
+
+insertCommand (){
+	tag=$1
+	targetDocument=$2
+	if [ "$#" -eq 2 ]; then
+		xPath='/document/main/body/code/dynamicCode'
+	else
+		xPath=$3
+	fi
+	xmlstarlet ed --inplace -s "$xPath" -t elem -n "dynamicCommand" -v "$tag" "$targetDocument"
+	formatDocument "$targetDocument"
+}
+
+declareDynamicVariable () {
+	variableStatement=$1
+	targetDocument=$2
+	if [ "$#" -eq 2 ]; then
+		xPath='/document/main/body/variables/dynamicVar'
+	else
+		xPath=$3
+	fi
+	xmlstarlet ed --inplace -s "$xPath" -t elem -n "dynamicCommand" -v "$variableStatement" "$targetDocument"
+	formatDocument "$targetDocument"
+}
+
+########################################
+# section: upload key
+########################################
+# generate key upload command for keys
+cmdValue=$(mc --json share upload --recursive -E $expireTime chtc/phytomorphservice/collaborator/$collaboratorID/keys/public.key)
+# replace values in command
+curlCmd=$(echo $cmdValue | jq -r .share | sed 's:<FILE>:/tmp/public.key:g' | sed 's:<NAME>:/public.key:g')
+
+########################################
+# fill in the variables on the function document
+########################################
+# copy function/var template to fill in the blanks
+tmp_functionTemplateName='tmp_XfunctionTemplate.xml'
+cp XfunctionTemplate.xml "$tmp_functionTemplateName"
+fillInVariable 'collaboratorName' "$userName" "$tmp_functionTemplateName"
+fillInVariable 'keyEmail' "$email" "$tmp_functionTemplateName"
+fillInVariable 'keyComment' "siteID_$site" "$tmp_functionTemplateName"
+fillInVariable 'siteID' "$siteID" "$tmp_functionTemplateName"
+fillInVariable 'uploadKeyCurlCommand' "$curlCmd" "$tmp_functionTemplateName"
+
+########################################
+# fill in the shell script
+########################################
+# copy shell script template to fill in functions from filled in template
+tmp_shellTemplateName='tmp_XshellTemplate.xml'
+cp XshellTemplate.xml $tmp_shellTemplateName
+
+########################################
+# declare empty
+########################################
+declareDynamicVariable 'manifestSiteKey=""' "$tmp_shellTemplateName"
+declareDynamicVariable 'manifestStorageKey=""' "$tmp_shellTemplateName"
+declareDynamicVariable 'xferUpKey=""' "$tmp_shellTemplateName"
+declareDynamicVariable 'xferDownKey=""' "$tmp_shellTemplateName"
+
+
+insertBlockTag "#<tmpVariableKeys>" "$tmp_shellTemplateName" "/document/main/body/variables/dynamicVar"
+tmpUploadKey=$(./issueUploadKey $fullSiteStorage $expireTime)
+declareDynamicVariable "xferUpKey='$tmpUploadKey'" "$tmp_shellTemplateName"
+insertBlockTag "#</tmpVariableKeys>" "$tmp_shellTemplateName" "/document/main/body/variables/dynamicVar"
+
+
+########################################
+# functions on the
+########################################
+insertBlockTag "#<keyShare>" "$tmp_shellTemplateName"
+insertFunction 'generateKey' "$tmp_functionTemplateName" "$tmp_shellTemplateName"
+insertFunction 'exportKey' "$tmp_functionTemplateName" "$tmp_shellTemplateName"
+insertFunction 'sharePublicKey' "$tmp_functionTemplateName" "$tmp_shellTemplateName"
+insertFunction 'removeKeyShare' "$tmp_functionTemplateName" "$tmp_shellTemplateName"
+insertBlockTag "#</keyShare>" "$tmp_shellTemplateName"
+
+
+
+insertBlockTag "#<transmitData>" "$tmp_shellTemplateName"
+insertFunction 'refreshUploadKey' "$tmp_functionTemplateName" "$tmp_shellTemplateName"
+insertFunction 'upload' "$tmp_functionTemplateName" "$tmp_shellTemplateName"
+insertBlockTag "#</transmitData>" "$tmp_shellTemplateName"
+
+########################################
+# insert first run code
+########################################
+insertBlockTag "#<firstRun>" "$tmp_shellTemplateName" '/document/main/body/code/dynamicCode'
+insertCommand 'echo "start:generating communication key(s)"' "$tmp_shellTemplateName"
+insertCommand "generateKey" "$tmp_shellTemplateName"
+insertCommand 'echo "end:generating communication key(s)"' "$tmp_shellTemplateName"
+insertCommand 'echo "start:exporting public communication key"' "$tmp_shellTemplateName"
+insertCommand "exportKey" "$tmp_shellTemplateName"
+insertCommand 'echo "end:exporting public communication key"' "$tmp_shellTemplateName"
+insertCommand 'echo "start:sharing public communication key with phytoMorph service"' "$tmp_shellTemplateName"
+insertCommand "sharePublicKey" "$tmp_shellTemplateName"
+insertCommand 'echo "end:sharing public communication key with phytoMorph service"' "$tmp_shellTemplateName"
+insertCommand 'echo "start:cleaning up"' "$tmp_shellTemplateName"
+insertCommand "removeKeyShare" "$tmp_shellTemplateName"
+insertCommand 'echo "end:cleaning up"' "$tmp_shellTemplateName"
+insertBlockTag "#</firstRun>" "$tmp_shellTemplateName" '/document/main/body/code/dynamicCode'
+
+
+########################################
+# clean the document
+########################################
+xmlstarlet fo -n $tmp_shellTemplateName > TEMPY
+xmlstarlet sel -T --inplace -t -v '/document' TEMPY > $tmp_shellTemplateName
+mv $tmp_shellTemplateName test.sh
+chmod +x test.sh
+
+#keyHeaderStr=$(echo $functionCmd | xmlstarlet sel -T -t -v '/functionList/rmkeyShareHeaderStr')
+#keyHeaderStp=$(echo $functionCmd | xmlstarlet sel -T -t -v '/functionList/rmkeyShareHeaderStp')
+# for key section
+########################################
+
+# for upload section
+#getNewKeyCMD=$(echo $functionCmd | xmlstarlet sel -T -t -v '/functionList/getNewUploadKey')
+#kiosk="/iplant/home/nmiller/publicExchange/$userID.pub"
+
+# for upload section
+#echo '#!/bin/bash' > exchangeData
+#echo "collaboratorID='"$collaboratorID"'" >> exchangeData
+#echo "siteID='"$siteID"'" >> exchangeData
+#echo 'issueDate=$(date +"%Y_%m_%d")' >> exchangeData
+#echo 'publicExhange="/iplant/home/nmiller/publicExchange/"' >> exchangeData
+
+
+#######
+#echo -e $getNewKeyCMD >> exchangeData
+
+#####
+#echo -e $keyHeaderStr >> exchangeData
+#echo -e $generateCMD >> exchangeData
+#echo -e $exportCMD >> exchangeData
+#echo -e $shareCMD >> exchangeData
+#echo -e $removeCMD >> exchangeData
+
+#echo "generateKey"  >> exchangeData
+#echo "exportKey"  >> exchangeData
+#echo "sharePublicKey"  >> exchangeData
+#echo "removeKeyShare"  >> exchangeData
+
+#echo -e $keyHeaderStp >> exchangeData
+
+
+#echo "getUploadKey"  >> exchangeData
+
+
+
+
+
+#echo $functionCmd
+#echo $shareCMD
+
+
+

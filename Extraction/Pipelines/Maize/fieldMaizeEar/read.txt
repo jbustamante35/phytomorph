@@ -1,0 +1,6 @@
+%% readme
+% date: April 7, 2020
+% made progress on two images taken from grow outs in south america.
+% i will ask where these images are taken.  The code as been slightly
+% re-tooled so that changes will not have adverse side-effects on the other
+% pipelines.

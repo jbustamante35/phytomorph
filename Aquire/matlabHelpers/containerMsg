@@ -1,7 +1,0 @@
-classdef < containerMsg
-    properties
-    end
-    
-    methods
-    end
-end

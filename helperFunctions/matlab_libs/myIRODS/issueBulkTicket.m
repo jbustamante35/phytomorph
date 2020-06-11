@@ -1,8 +1,10 @@
 function [FileList] = issueBulkTicket(FileList)
     ticketMultiplier = 2;
+    
     if ~isempty(FileList)
         
-        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % get the paths to the file names
         for e = 1:numel(FileList)
             [pth{e},nm,ext] = fileparts(FileList{e});
@@ -10,6 +12,8 @@ function [FileList] = issueBulkTicket(FileList)
         UQ = unique(pth);
         
         
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % find the directories the files belong to
         for u = 1:numel(UQ)
             ticketCNT(u) = 0;

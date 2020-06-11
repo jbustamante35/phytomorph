@@ -6,10 +6,11 @@ classdef daqMessage < doid & matlab.mixin.SetGet
     end
     
     methods
-        
+        %%%%%%%%%%%%%%%%%%
         % note that the last parameter allows for messages to be used
         % without pointers. This allows for messages to be constructed
         % without the datastore
+        %%%%%%%%%%%%%%%%%%
         function [obj] = daqMessage(from,to,body,nonPtr)
             if nargin <=3;nonPtr = false;end
             if ~nonPtr
@@ -23,6 +24,9 @@ classdef daqMessage < doid & matlab.mixin.SetGet
             end
         end
         
+        %%%%%%%%%%%%%%%%%%
+        %
+        %%%%%%%%%%%%%%%%%%
         function [type] = messageType(obj)
             if isa(obj.body,'dptr')
                 type = obj.body.refs.type;
@@ -31,6 +35,9 @@ classdef daqMessage < doid & matlab.mixin.SetGet
             end
         end
         
+        %%%%%%%%%%%%%%%%%%
+        %
+        %%%%%%%%%%%%%%%%%%
         function [] = set(obj,key,value)
             obj.(key)=dptr.transformInput(value);
         end

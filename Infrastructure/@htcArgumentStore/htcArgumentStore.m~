@@ -1,0 +1,19 @@
+classdef htcArgumentStore < objectFSstore
+    
+    
+    properties (Constant)
+        defaultPath = '/mnt/spaldingdata/nate/octerineDataStore/htcArguments/';
+    end
+    
+    
+        function [this] = htcResourceStore(basePath)
+            if nargin == 0;basePath = htcResourceStore.defaultPath;end
+            this@objectFSstore(basePath);
+            this.database = [basePath 'resource.db'];
+            mksqlite('open',this.database);
+            mksqlite(['CREATE TABLE IF NOT EXISTS resources '...
+                '(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT, type TEXT,hash TEXT)']);
+        end
+    
+    
+end

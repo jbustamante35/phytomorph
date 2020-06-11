@@ -30,7 +30,7 @@ function [T ret] = measureImage(fsI,toMeasure,downsample,dR,CHUNK)
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % create sample sites for fft application
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        [g1 g2] = ndgrid(1:downsample:size(toMeasure,1),1:downsample:size(toMeasure,2));
+        [g1,g2] = ndgrid(1:downsample:size(toMeasure,1),1:downsample:size(toMeasure,2));
         idx = sub2ind(size(toMeasure),g1(:),g2(:));
         idx = find(toMeasure(idx) == 1);
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -50,7 +50,7 @@ function [T ret] = measureImage(fsI,toMeasure,downsample,dR,CHUNK)
         h = fspecial('average',[5 1]);
         ufT = imfilter(ufT,h);
         % find period via first peak finding
-        [T f] = findT(ufT,2*dR+1);
+        [T,f] = findT(ufT,2*dR+1,30,1);
         fprintf(['e-time for find fft @ ' num2str(etime(clock,tm)) '\n']);
         %%%%%%%%%%%%%%%%%%%%%%%%%%
         % display

@@ -1,0 +1,6 @@
+#!/bin/bash
+siteID=$(uuidgen)
+ownerID=$(sqlite3 $serviceDB "SELECT id FROM collaborator WHERE name='$2';")
+sqlite3 $serviceDB "INSERT OR IGNORE INTO xchangePoint (name,siteID,owner) VALUES ('$1','$siteID');"
+newID=$(sqlite3 $serviceDB "SELECT id FROM xchangePoint WHERE siteID='$siteID'")
+echo $newID

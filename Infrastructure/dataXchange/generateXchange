@@ -1,0 +1,66 @@
+#!/bin/bash
+input=$1
+userName=$(echo $input | cut -f1 -d'@')
+xchangePoint=$(echo $input | cut -f2 -d'@')
+expireTime=$2
+collaboratorID=$(sqlite3 $serviceDB "SELECT userID FROM collaborator WHERE name='$userName';");
+email=$(sqlite3 $serviceDB "SELECT email FROM collaborator WHERE name='$userName';");
+siteID=$(sqlite3 $serviceDB "SELECT siteID FROM xchangePoint WHERE name='$xchangePoint';");
+
+
+# generate key upload command for keys
+cmdValue=$(mc --json share upload -E $expireTime chtc/phytomorphservice/collaborator/$collaboratorID/keys/public.key)
+# replace values in command
+curlCmd=$(echo $cmdValue | jq -r .share | sed 's:<FILE>:/tmp/public.key:g' | sed 's:<NAME>:/public.key:g')
+# replace values in shell command sheet
+functionCmd=$(xmlstarlet ed -u '//NAME' -v "$userName" keyGenTemplate)
+functionCmd=$(echo $functionCmd | xmlstarlet ed -u '//EMAIL' -v "$email")
+functionCmd=$(echo $functionCmd | xmlstarlet ed -u '//KEYUPCURLCMD' -v "$curlCmd")
+functionCmd=$(echo $functionCmd | xmlstarlet ed -u '//SITEID' -v "$siteID")
+# for key section
+generateCMD=$(echo $functionCmd | xmlstarlet sel -T -t -v '/functionList/generateKey')
+exportCMD=$(echo $functionCmd | xmlstarlet sel -T -t -v '/functionList/exportKey')
+shareCMD=$(echo $functionCmd | xmlstarlet sel -T -t -v '/functionList/sharePublicKey')
+removeCMD=$(echo $functionCmd | xmlstarlet sel -T -t -v '/functionList/removeKeyShare')
+keyHeaderStr=$(echo $functionCmd | xmlstarlet sel -T -t -v '/functionList/rmkeyShareHeaderStr')
+keyHeaderStp=$(echo $functionCmd | xmlstarlet sel -T -t -v '/functionList/rmkeyShareHeaderStp')
+# for key section
+
+# for upload section
+getNewKeyCMD=$(echo $functionCmd | xmlstarlet sel -T -t -v '/functionList/getNewUploadKey')
+#kiosk="/iplant/home/nmiller/publicExchange/$userID.pub"
+
+# for upload section
+echo '#!/bin/bash' > exchangeData
+echo "collaboratorID='"$collaboratorID"'" >> exchangeData
+echo "siteID='"$siteID"'" >> exchangeData
+echo 'issueDate=$(date +"%Y_%m_%d")' >> exchangeData
+echo 'publicExhange="/iplant/home/nmiller/publicExchange/"' >> exchangeData
+
+
+#######
+echo -e $getNewKeyCMD >> exchangeData
+
+#####
+echo -e $keyHeaderStr >> exchangeData
+echo -e $generateCMD >> exchangeData
+echo -e $exportCMD >> exchangeData
+echo -e $shareCMD >> exchangeData
+echo -e $removeCMD >> exchangeData
+
+echo "generateKey"  >> exchangeData
+echo "exportKey"  >> exchangeData
+echo "sharePublicKey"  >> exchangeData
+#echo "removeKeyShare"  >> exchangeData
+
+echo -e $keyHeaderStp >> exchangeData
+
+
+echo "getUploadKey"  >> exchangeData
+
+
+
+
+
+#echo $functionCmd
+#echo $shareCMD

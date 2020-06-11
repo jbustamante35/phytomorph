@@ -30,6 +30,19 @@ function [path, name, ext] = fileparts(file)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 classType = class(file);
+
+if isa(file,'file')
+    path = file.filePath;
+    name = file.fileName;
+    eidx = strfind(name,'.');
+    if ~isempty(eidx)
+        ext = name(eidx(end):end);
+    else
+        ext = '';
+    end
+    return;
+end
+
 fidx = strfind(classType,'.');
 if ~isempty(fidx)
     classType = classType(fidx(end)+1:end);

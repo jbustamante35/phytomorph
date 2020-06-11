@@ -1,0 +1,4 @@
+#!/bin/bash
+serviceID=$(sqlite3 $serviceDB "SELECT id FROM service WHERE service='$1';");
+collaboratorID=$(sqlite3 $serviceDB "SELECT id FROM collaborator WHERE name='$2';");
+sqlite3 $serviceDB "DELETE FROM xchangeSite WHERE owner='$collaboratorID' AND siteName='$3' AND service='$serviceID';"

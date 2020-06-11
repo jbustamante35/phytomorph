@@ -1,4 +1,4 @@
-function [finalScore,nX,rawX] = cropTimeSeriesFromRectified_ver3(FileList,boundingBox,timeSeries,LABELS,tform,cameraShift,emergenceNet,BESTEmergence,nsz,zU,zE,CELLMASK,BOX,vidx,Tscore)
+function [finalScore,nX,rawX] = cropTimeSeriesFromRectified_ver3(FileList,boundingBox,timeSeries,tform,cameraShift,emergenceNet,BESTEmergence,nsz,zU,zE,CELLMASK,BOX,vidx)
     % /iplant/home/jgustin/20170220_Camera1/
     % cb22:fr71 b
     % cb50:fr69 b

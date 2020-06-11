@@ -1,5 +1,11 @@
-function [] = measureArabidopsisSeed(fileName,oPath)
+function [out] = measureArabidopsisSeed(fileName,oPath,localT)
+    debug = true;
+    if nargin == 2;localT = false;end
+
     fileList = {};
+    
+    
+    
     % make directory
     fprintf(['Make output directory.\n']);
     mkdir(oPath);
@@ -9,6 +15,7 @@ function [] = measureArabidopsisSeed(fileName,oPath)
     else
         I = fileName;
     end
+    
     % remove the "alpha-channel" - added Oct 25. 2019
     if size(I,3) > 3
         I(:,:,4:end) = [];
@@ -23,17 +30,44 @@ function [] = measureArabidopsisSeed(fileName,oPath)
             H = imcomplement(H);
          end
     else
-         H = imcomplement(double(I))/255+1;
-         I = cat(3,I,I,I);
+        if isa(I,'uint8')
+            H = imcomplement(double(I))/255+1;
+        elseif isa(I,'double')
+            if mean(I(:)) > .5
+                H = imcomplement(I);
+            else
+                H = I;
+            end
+        end
+        I = cat(3,I,I,I);
     end
     fprintf(['Threshold image.\n']);
     fprintf(['Image size:' num2str(size(H)) '\n']);
-    % run ostu on value channel
-    M = H > graythresh(H);
+    
+    
+    
+    if ~localT
+        % run ostu on value channel
+        M = H > graythresh(H);
+    else
+        th = adaptthresh(H,'NeighborhoodSize',601);
+        M = imbinarize(H,th);
+    end
+    
     % remove small objects
     M = bwareaopen(M,50);
+    
+    
+    
+    % added removal of large object touching background
+    %imclearborder(M);
+    
     % fill in the object - added for wilson controls of coins
-    M = imfill(M,'holes');
+    %M = imfill(M,'holes');
+    
+   
+    
+    
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     fprintf(['Measure with region props.\n']);
     R = regionprops(M,'Area','PixelIdxList','MajorAxisLength','MinorAxisLength','Centroid','Eccentricity');
@@ -86,6 +120,12 @@ function [] = measureArabidopsisSeed(fileName,oPath)
     out = flattenMaskOverlay(out,logical(clumpMask),.6,'g');
 
 
+    
+    if debug
+        imshow(out,[]);
+       
+    end
+    
     %{
     image(out);
     hold on
@@ -105,9 +145,11 @@ function [] = measureArabidopsisSeed(fileName,oPath)
 
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    fprintf(['Write image data.\n']);
-    fileList{end+1} = [oPath nm '_return.jpg'];
-    imwrite(out,fileList{end});
+    if ~isempty(oPath)
+        fprintf(['Write image data.\n']);
+        fileList{end+1} = [oPath nm '_return.jpg'];
+        imwrite(out,fileList{end});
+    end
 
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -136,15 +178,24 @@ function [] = measureArabidopsisSeed(fileName,oPath)
         
         centroidData = [centroidData;seedColorSamples(seed).Centroid];
     end
-    csvwrite(seedFileName_centroid,centroidData);
+    
+    
+    if ~isempty(oPath)
+        csvwrite(seedFileName_centroid,centroidData);
+    end
     
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     fprintf(['Write phenotype data.\n']);
     phenotypeData = [[R(fidx).Area]' [R(fidx).MajorAxisLength]' [R(fidx).MinorAxisLength]' [R(fidx).Eccentricity]' meanRGB stdRGB];
     fileList{end+1} = [oPath nm '_phenotypeData.csv'];
-    csvwrite(fileList{end},phenotypeData);
+    
+    
+    if ~isempty(oPath)
+        csvwrite(fileList{end},phenotypeData);
+    end
 
+    
     
     U_data = mean(phenotypeData,1);
     STD_data = std(phenotypeData,1,1);
@@ -167,8 +218,13 @@ function [] = measureArabidopsisSeed(fileName,oPath)
         colorSquare = [colorSquare;tmpC];
     end
     colorSquare = colorSquare/255;
-    imwrite(colorSquare,[oPath filesep 'colorPatch.jpg']);
-    csvwrite([oPath filesep 'colorPatch.csv'],eyeColor);
+    
+    % write data
+    %%%%%%%%%%%%%%%%%%%%%%%%%
+    if ~isempty(oPath)
+        imwrite(colorSquare,[oPath filesep 'colorPatch.jpg']);
+        csvwrite([oPath filesep 'colorPatch.csv'],eyeColor);
+    end
     
     
     
@@ -221,14 +277,17 @@ function [] = measureArabidopsisSeed(fileName,oPath)
 
     JSON_string = savejson('seedDoc',tmpDoc);
 
-    %%%%%%%%%%%%%%%%%%%%%%%%%
-    % save JSON string
-    %%%%%%%%%%%%%%%%%%%%%%%%%
-    fileList{end+1} = [oPath nm '_jdoc.json'];
-    fileID = fopen(fileList{end},'w');
-    fprintf(fileID,strrep(JSON_string,'\/','\\/'));
-    fclose(fileID);
-    %%%%%%%%%%%%%%%%%%%%%%%%%
+    
+    if ~isempty(oPath)
+        %%%%%%%%%%%%%%%%%%%%%%%%%
+        % save JSON string
+        %%%%%%%%%%%%%%%%%%%%%%%%%
+        fileList{end+1} = [oPath nm '_jdoc.json'];
+        fileID = fopen(fileList{end},'w');
+        fprintf(fileID,strrep(JSON_string,'\/','\\/'));
+        fclose(fileID);
+        %%%%%%%%%%%%%%%%%%%%%%%%%
+    end
 
 end
 

@@ -420,17 +420,21 @@ classdef myDS < handle & matlab.io.Datastore & matlab.io.datastore.Partitionable
         % source is the link to the source - in the case of direction interation
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function [returnKey] = put(obj,data,type,target_key,source_key)
-            % if there is no source link
-            if nargin == 4
-                source_key = [];
+            try
+                % if there is no source link
+                if nargin == 4
+                    source_key = [];
+                end
+                % generate time-key
+                [K,T] = obj.generateKeyTime();
+                % perform insert
+                %mksqlite('INSERT INTO flinks VALUES (?,?,?,?,?,?)', {K,T,data,type,target_key,source_key});
+                mksqlite('INSERT INTO flinks VALUES (?,?,?,?,?,?,?)', {'',K,T,data,type,target_key,source_key});
+                % return key
+                returnKey = K;
+            catch ME
+                ME;
             end
-            % generate time-key
-            [K,T] = obj.generateKeyTime();
-            % perform insert
-            %mksqlite('INSERT INTO flinks VALUES (?,?,?,?,?,?)', {K,T,data,type,target_key,source_key});
-            mksqlite('INSERT INTO flinks VALUES (?,?,?,?,?,?,?)', {'',K,T,data,type,target_key,source_key});
-            % return key
-            returnKey = K;
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

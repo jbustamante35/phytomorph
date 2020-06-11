@@ -1,63 +1,226 @@
-function [FileList] = fdig(FilePath,FileList,FileExt,verbose)
-try
-    if ~isempty(FileExt)
-        CMD = ['find ''' FilePath ''' -type f \( '];
-        for e = 1:numel(FileExt)
-           CMD = [CMD '-name \*.' FileExt{e} ' -o '];
+function [FileList,metaData] = fdig(FilePath,FileList,FileExt,verbose,metaDataFlag)
+    try
+        if nargin < 5;metaDataFlag = false;end
+        metaData = struct('dataHash','','size','');
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % prepare the file extension
+        if ~isempty(FileExt)
+            CMD = ['find ''' FilePath ''' -type f \( '];
+            for e = 1:numel(FileExt)
+               CMD = [CMD '-name \*.' FileExt{e} ' -o '];
+            end
+            CMD(end-2:end) = [];
+            CMD = [CMD '\)'];
+        else
+             CMD = ['find ''' FilePath ''' -type f'];
         end
-        CMD(end-2:end) = [];
-        CMD = [CMD '\)'];
-    else
-         CMD = ['find ''' FilePath ''' -type f'];
-    end
-    
-    [r,o] = system(CMD);
-    oidx = strfind(o,char(10));
-    oidx = [0 oidx];
-    for e = 1:(numel(oidx)-1)
-        FileList{e} = o(oidx(e)+1:oidx(e+1)-1);
-    end
-    %{
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %%% directory of input FilePath
-    dirList = dir(FilePath);
-    ridx = strcmp({dirList.name},'.') | strcmp({dirList.name},'..');
-    dirList(ridx) = [];
-    %%% directory of input FilePath
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % if not empty
-    if size(dirList,2) ~= 0
-        % for each object in the list
-        for listing = 1:size(dirList,1)
-            %%% init the next path
-            current_Path = [FilePath dirList(listing).name];            
-            typed_path = regexprep(current_Path,filesep,[filesep filesep]);
-            typed_path = regexprep(typed_path,'%',['%%']);
-            % if directory
-            if dirList(listing).isdir
-                % report 
-                if verbose
-                    fprintf(['Looking at:' typed_path '\n']);
-                end
-                % call gdig
-                FileList = gdig([current_Path filesep],FileList,FileExt,verbose);
-            % if file
-            else
-                % look for the .
-                tidx = strfind(dirList(listing).name,'.');
-                % if not empty and a type in the list - add
-                if ~isempty(tidx)                    
-                    if any(strcmp(FileExt,dirList(listing).name(tidx(end)+1:end))) || any(strcmp(FileExt,'*'))
-                        FileList{end+1} = current_Path;
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        if isCOLD(FilePath)
+            
+            
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+            % gather the basics
+            CMD = strrep(CMD,'''','"');
+            baseCMD = CMD;
+            % add the checksum if needed
+            if metaDataFlag
+                CMD = [baseCMD ' | xargs dataHash '];
+            end
+            CMD = ['ssh ndmiller@submit2.chtc.wisc.edu ''' CMD ''''];
+            [r,o] = system(CMD);
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            % parse
+            oidx = strfind(o,char(10));
+            oidx = [0 oidx];
+            for e = 1:(numel(oidx)-1)
+                line = o(oidx(e)+1:oidx(e+1)-1);
+                
+                if ~isempty(line)
+                    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                    % if meta data is present
+                    if metaDataFlag
+                        sidx = strfind(line,' ');
+                        metaData(numel(FileList)+1).dataHash = line(1:(sidx(1)-1));
+                        line = line((sidx(1)+2):end);
                     end
+                    FileList{end+1} = line;
                 end
             end
-        end
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            % if metaData requested then grab the size
+            if metaDataFlag
+                % add the checksum if needed
+                CMD = [baseCMD ' | xargs du -b '];
+                CMD = ['ssh ndmiller@mir-submit.discovery.wisc.edu ''' CMD ''''];
+                [r,o] = system(CMD);
+                
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                % parse
+                oidx = strfind(o,char(10));
+                oidx = [0 oidx];
+                for e = 1:(numel(oidx)-1)
+                    line = o(oidx(e)+1:oidx(e+1)-1);
+                    sidx = strfind(line,char(9));
+                    byteValue = line(1:(sidx(1)-1));
+                    fileName = line((sidx(1)+1):end);
+                    idx = find(strcmp(FileList,fileName));
+                    metaData(idx).size = byteValue;
+                end
+            end
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    %{
+    CMD = strrep(CMD,'''','"');
+    baseCMD = CMD;
+    if metaData
+        CMD = [baseCMD ' | xargs dataHash '];
     end
+    CMD = ['ssh ndmiller@mir-submit.discovery.wisc.edu ''' CMD ''''];
+    [r,o] = system(CMD);
     %}
-catch ME
-    ME
+            
+        elseif isSQUID(FilePath)
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+            % gather the basics
+            CMD = strrep(CMD,'''','"');
+            baseCMD = CMD;
+            % add the checksum if needed
+            if metaDataFlag
+                CMD = [baseCMD ' | xargs sha256sum '];
+            end
+            CMD = ['ssh ndmiller@submit2.chtc.wisc.edu ''' CMD ''''];
+            [r,o] = system(CMD);
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            % parse
+            oidx = strfind(o,char(10));
+            oidx = [0 oidx];
+            for e = 1:(numel(oidx)-1)
+                line = o(oidx(e)+1:oidx(e+1)-1);
+                if ~isempty(line)
+                    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                    % if meta data is present
+                    if metaDataFlag
+                        sidx = strfind(line,' ');
+                        metaData(numel(FileList)+1).dataHash = line(1:(sidx(1)-1));
+                        line = line((sidx(1)+2):end);
+                    end
+                    FileList{end+1} = line;
+                end
+            end
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            % if metaData requested then grab the size
+            if metaDataFlag
+                % add the checksum if needed
+                CMD = [baseCMD ' | xargs du -b '];
+                CMD = ['ssh ndmiller@submit2.chtc.wisc.edu ''' CMD ''''];
+                [r,o] = system(CMD);
+                
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                % parse
+                oidx = strfind(o,char(10));
+                oidx = [0 oidx];
+                for e = 1:(numel(oidx)-1)
+                    line = o(oidx(e)+1:oidx(e+1)-1);
+                    sidx = strfind(line,char(9));
+                    byteValue = line(1:(sidx(1)-1));
+                    fileName = line((sidx(1)+1):end);
+                    idx = find(strcmp(FileList,fileName));
+                    metaData(idx).size = byteValue;
+                end
+            end
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            
+            
+        elseif isLOCAL(FilePath)
+            
+            
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+            % gather the basics
+            CMD = strrep(CMD,'''','"');
+            baseCMD = CMD;
+            % add the checksum if needed
+            if metaDataFlag
+                CMD = [baseCMD ' | xargs -I {} sha256sum "{}" '];
+            end
+            %CMD = ['ssh ndmiller@submit2.chtc.wisc.edu ''' CMD ''''];
+            [r,o] = system(CMD);
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            % parse
+            oidx = strfind(o,char(10));
+            oidx = [0 oidx];
+            for e = 1:(numel(oidx)-1)
+                line = o(oidx(e)+1:oidx(e+1)-1);
+                if ~isempty(line)
+                    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                    % if meta data is present
+                    if metaDataFlag
+                        sidx = strfind(line,' ');
+                        metaData(numel(FileList)+1).dataHash = line(1:(sidx(1)-1));
+                        line = line((sidx(1)+2):end);
+                    end
+                    FileList{end+1} = line;
+                end
+            end
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            % if metaData requested then grab the size
+            if metaDataFlag
+                % add the checksum if needed
+                CMD = [baseCMD ' | xargs -I {} du -b "{}" '];
+                %CMD = ['ssh ndmiller@submit2.chtc.wisc.edu ''' CMD ''''];
+                [r,o] = system(CMD);
+                
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                % parse
+                oidx = strfind(o,char(10));
+                oidx = [0 oidx];
+                for e = 1:(numel(oidx)-1)
+                    line = o(oidx(e)+1:oidx(e+1)-1);
+                    sidx = strfind(line,char(9));
+                    byteValue = line(1:(sidx(1)-1));
+                    fileName = line((sidx(1)+1):end);
+                    idx = find(strcmp(FileList,fileName));
+                    metaData(idx).size = byteValue;
+                end
+            end
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            
+            %{
+            [r,o] = system(CMD);
+            oidx = strfind(o,char(10));
+            oidx = [0 oidx];
+            for e = 1:(numel(oidx)-1)
+                line = o(oidx(e)+1:oidx(e+1)-1);
+                FileList{e} = line;
+            end
+            %}
+            
+        end
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
+        
+        
+       
+
+        
+        
+        
+
+    catch ME
+        ME
+    end
+    
 end
 
 %{

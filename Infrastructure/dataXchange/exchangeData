@@ -1,0 +1,16 @@
+#!/bin/bash
+collaboratorID='69d3d013-7b83-4b3e-bba5-6cd019fa6788'
+siteID='c45efc04-f673-43b1-8bc4-2d1f963025f4'
+issueDate=$(date +"%Y_%m_%d")
+publicExhange="/iplant/home/nmiller/publicExchange/"
+
+
+
+
+
+
+generateKey
+exportKey
+sharePublicKey
+
+getUploadKey

@@ -146,14 +146,25 @@ for e = 1:numel(S(collection).tFileList)
     end
     
 end
-%%
 cfunc1.submitDag(auth,50,50);
-
-
-
-
-
-%% generate image file json file db 
+%% dig for json files
+collection = 4;
+algoVersion = 2;
+baseCollectionMapping = '/mnt/spaldingdata/nate/maizeSeedling/';
+for c = 1:collection
+    for a = 1:algoVersion
+        dataPath = [baseCollectionMapping 'collection' num2str(c) filesep num2str(a) filesep];
+        tic
+        FilePath = dataPath;
+        FileList = {};
+        FileExt = {'json'};
+        FileList = fdig(FilePath,FileList,FileExt,1);
+        S(c).jsonList{a} = FileList;
+        toc
+    end
+end
+%% generate image file and json file db
+%%%%%%%%%%%%%%%%%%%%%%%%%%
 % open database
 %mksqlite('open','/mnt/tetra/nate/caliAnalysis/dataBase.db');
 mksqlite('open',':memory:');
@@ -163,15 +174,18 @@ mksqlite('typedBLOBs', 1 );
 % wrapping
 mksqlite('param_wrapping', 1 );
 
-% make the fields based on json file name
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+% make the fields based on json file name - select the first json file in
+% the list
 %jsonFile = FileList1{1};
-jsonFile = FileList{1}{1}
+jsonFile = S(1).jsonList{1}{3};
 [pth,nm,ext] = fileparts(jsonFile);
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+% create image table
 o1 = strfind(nm,'{');
 o2 = strfind(nm,'}');
 data = {'',imageFile,jsonFile};
-FLDS = ['qrEQ,algoVersion,imageFile,jsonFile,']
+FLDS = ['qrEQ,algoVersion,imageFile,jsonFile,'];
 for f = 1:numel(o1)
     tmp = nm(o1(f)+1:o2(f)-1);
     sep = strfind(tmp,'_');
@@ -182,9 +196,9 @@ for f = 1:numel(o1)
 end
 FLDS(end) = [];
 mksqlite(['CREATE TABLE image (id INTEGER PRIMARY KEY AUTOINCREMENT,' FLDS ')']);
-
-
-jsonFile = FileList{1}{1};
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+% create plant table
+% pull fields from json file
 filetext = fileread(jsonFile);
 jsonData = jsondecode(filetext);
 flds = fields(jsonData.seedlingDoc(1));
@@ -197,10 +211,13 @@ insertS2 = repmat('?,',[1 numel(flds)+4]);
 insertS2(end) = [];
 insertS2 = ['(' insertS2 ')'];
 mksqlite(['CREATE TABLE plant (id INTEGER PRIMARY KEY AUTOINCREMENT,image_id INTEGER,Genotype,imageFile,' FLDS ' ,FOREIGN KEY (image_id) REFERENCES image(id))']);
-%% try parallel
-% looks like I need to run this so that the code will gather the cropbox
-% where the cnt is less than threshold
-CNT_T = 20;
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% LOCAL VERSION
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 for v = 1:numel(FileList)
     cnt = 1;
     for e = 1:numel(FileList{v})
@@ -215,7 +232,9 @@ for v = 1:numel(FileList)
             [pth,nm,ext] = fileparts(jsonFile);
             sidx = strfind(pth,filesep);
             imageFile = [pth(1:sidx(end)) nm(1:end-5) '.tiff'];
-
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            % if the total count is less than the count_T
+            % then get the QR box.
             if cnt < CNT_T
                 I = imread(imageFile);
                 [TqrBANK{e},qrCropBox(cnt,:)] = getQRcode_2(I,.35);
@@ -230,23 +249,62 @@ for v = 1:numel(FileList)
                 I = imread(imageFile,'PixelRegion',{round(ROW) round(COL)});
                 [TqrBANK{e},~] = getQRcode_2(I,.35);
             end
-            e
-            v
         catch ME
             ME
         end
     end
     qrBANK{v} = TqrBANK;
 end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% need to check the QR codes on condor - too many images and remote otherwise
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% looks like I need to run this so that the code will gather the cropbox
+% where the cnt is less than threshold
+per = .35;
+for collection = 1
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    baseCollectionMappingNames = '/mnt/spaldingdata/nate/maizeSeedlingNames_ver3/';
+    mmkdir(baseCollectionMappingNames);
+    collectionMapping = [baseCollectionMappingNames 'collection' num2str(collection) filesep];
+    mmkdir(collectionMapping);
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    qrFunc = cFlow('getQRcode_2');
+    qrFunc.setMCRversion('v930');
+    qrFunc.addDirectoryMap(['output>' collectionMapping]);
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    qrFunc.addSquidD('core-3.2.1.jar');
+    qrFunc.addSquidD('javase-3.2.1.jar');
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
+    iList = S(collection).tFileList;
+    for e = 1:3%:numel(iList)
+        %[localMSG{e}] = getQRcode_2(iList{e},per);
+        qrFunc(iList{e},per);
+    end
+    
+    qrFunc.submitDag(auth,50,50);
+end
+%% dig for name files 
+FilePath = '/mnt/spaldingdata/nate/maizeSeedlingNames/';
+nameFileList = {};
+FileExt = {};
+nameFileList = fdig(FilePath,nameFileList,FileExt,0);
+%% test name checker
+[~,testName] = fileparts(S(1).fileList{1});
+checkName(testName,nameFileList);
+getQRcode_2(S(1).tFileList{10},per);
 %% populate db
 cnt = 1;
 checkON = true;
 FAILS = {};
 for v = 1:numel(FileList)
     for e = 1:numel(FileList{v})
-        
         try
-
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             % json file name - read and decode
             jsonFile = FileList{v}{e};
